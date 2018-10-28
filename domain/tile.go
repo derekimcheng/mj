@@ -13,7 +13,7 @@ type Tile struct {
 }
 
 // NewTile returns a new Tile with the input parameters, or nil if the input is invalid.
-func NewTile(suit *Suit, ordinal int, id int) (*Tile, error) {
+func NewTile(suit *Suit, ordinal int) (*Tile, error) {
 	if suit == nil {
 		return nil, fmt.Errorf("Suit cannot be nil")
 	}
