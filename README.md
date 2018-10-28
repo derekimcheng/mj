@@ -6,5 +6,5 @@ Project mj
 
 ```
 cd app
-go run 
+go run .
 ```
