@@ -42,7 +42,7 @@ var suits = []*domain.Suit{
 }
 
 // GetSuits returns the set of all suits used in the game.
-func GetSuits() []*domain.Suit {
+func GetSuitsForGame() []*domain.Suit {
 	return suits
 }
 
