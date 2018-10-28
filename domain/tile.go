@@ -32,6 +32,7 @@ func (t *Tile) GetOrdinal() int {
 	return t.ordinal
 }
 
+// String ...
 func (t *Tile) String() string {
 	if t.GetSuit().friendlyNameFunc != nil {
 		return t.GetSuit().friendlyNameFunc(t)
