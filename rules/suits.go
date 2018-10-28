@@ -7,12 +7,11 @@ import (
 )
 
 var (
-	// TODO: add sanity tests for tile names.
-	dots       = domain.NewSuit("Dots", domain.SuitTypeSimple, 10, ordinalPlusOneAndSuit("Dots"))
-	bamboo     = domain.NewSuit("Bamboo", domain.SuitTypeSimple, 10, ordinalPlusOneAndSuit("Bamboo"))
-	characters = domain.NewSuit("Characters", domain.SuitTypeSimple, 10, ordinalPlusOneAndSuit("Wan"))
+	dots       = domain.NewSuit("Dots", domain.SuitTypeSimple, 9, ordinalPlusOneAndSuit("Dots"))
+	bamboo     = domain.NewSuit("Bamboo", domain.SuitTypeSimple, 9, ordinalPlusOneAndSuit("Bamboo"))
+	characters = domain.NewSuit("Characters", domain.SuitTypeSimple, 9, ordinalPlusOneAndSuit("Wan"))
 	winds      = domain.NewSuit("Winds", domain.SuitTypeHonor, 4, fixedNameFromOrdinal(windNames))
-	dragons    = domain.NewSuit("Dragons", domain.SuitTypeHonor, 4, fixedNameFromOrdinal(dragonNames))
+	dragons    = domain.NewSuit("Dragons", domain.SuitTypeHonor, 3, fixedNameFromOrdinal(dragonNames))
 	flowers    = domain.NewSuit("Flowers", domain.SuitTypeBonus, 4, suitAndOrdinalPlusOne("Flower"))
 	seasons    = domain.NewSuit("Seasons", domain.SuitTypeBonus, 4, suitAndOrdinalPlusOne("Season"))
 )
