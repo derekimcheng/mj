@@ -1,4 +1,10 @@
 # mj
-mj project
 
-Hello world
+Project mj
+
+## Instructions
+
+```
+cd app
+go run 
+```
