@@ -1,16 +1,43 @@
 package rules
 
-import "github.com/derekimcheng/mj/domain"
+import (
+	"fmt"
+
+	"github.com/derekimcheng/mj/domain"
+)
 
 var (
-	dots       = domain.NewSuit("Dots", domain.SuitTypeSimple, 10)
-	bamboo     = domain.NewSuit("Bamboo", domain.SuitTypeSimple, 10)
-	characters = domain.NewSuit("Characters", domain.SuitTypeSimple, 10)
-	winds      = domain.NewSuit("Winds", domain.SuitTypeHonor, 4)
-	dragons    = domain.NewSuit("Dragons", domain.SuitTypeHonor, 4)
-	flowers    = domain.NewSuit("Flowers", domain.SuitTypeBonus, 4)
-	seasons    = domain.NewSuit("Seasons", domain.SuitTypeBonus, 4)
+	// TODO: add sanity tests for tile names.
+	dots       = domain.NewSuit("Dots", domain.SuitTypeSimple, 10, ordinalPlusOneAndSuit("Dots"))
+	bamboo     = domain.NewSuit("Bamboo", domain.SuitTypeSimple, 10, ordinalPlusOneAndSuit("Bamboo"))
+	characters = domain.NewSuit("Characters", domain.SuitTypeSimple, 10, ordinalPlusOneAndSuit("Wan"))
+	winds      = domain.NewSuit("Winds", domain.SuitTypeHonor, 4, fixedNameFromOrdinal(windNames))
+	dragons    = domain.NewSuit("Dragons", domain.SuitTypeHonor, 4, fixedNameFromOrdinal(dragonNames))
+	flowers    = domain.NewSuit("Flowers", domain.SuitTypeBonus, 4, suitAndOrdinalPlusOne("Flower"))
+	seasons    = domain.NewSuit("Seasons", domain.SuitTypeBonus, 4, suitAndOrdinalPlusOne("Season"))
 )
+
+func ordinalPlusOneAndSuit(suffix string) domain.TileFriendlyNameFunc {
+	return func(t *domain.Tile) string {
+		return fmt.Sprintf("%d %s", 1+t.GetOrdinal(), suffix)
+	}
+}
+
+var windNames = []string{"East", "South", "West", "North"}
+var dragonNames = []string{"White", "Red", "Blue"}
+
+func fixedNameFromOrdinal(fixedNames []string) domain.TileFriendlyNameFunc {
+	return func(t *domain.Tile) string {
+		return fixedNames[t.GetOrdinal()]
+	}
+}
+
+func suitAndOrdinalPlusOne(prefix string) domain.TileFriendlyNameFunc {
+	return func(t *domain.Tile) string {
+		return fmt.Sprintf("%s %d", prefix, 1+t.GetOrdinal())
+	}
+}
+
 var suits = []*domain.Suit{
 	dots, bamboo, characters, winds, dragons, flowers, seasons,
 }
