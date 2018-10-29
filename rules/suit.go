@@ -7,13 +7,16 @@ import (
 )
 
 var (
-	dots       = domain.NewSuit("Dots", domain.SuitTypeSimple, 9, ordinalPlusOneAndSuit("Dots"))
-	bamboo     = domain.NewSuit("Bamboo", domain.SuitTypeSimple, 9, ordinalPlusOneAndSuit("Bamboo"))
-	characters = domain.NewSuit("Characters", domain.SuitTypeSimple, 9, ordinalPlusOneAndSuit("Wan"))
-	winds      = domain.NewSuit("Winds", domain.SuitTypeHonor, 4, fixedNameFromOrdinal(windNames))
-	dragons    = domain.NewSuit("Dragons", domain.SuitTypeHonor, 3, fixedNameFromOrdinal(dragonNames))
-	flowers    = domain.NewSuit("Flowers", domain.SuitTypeBonus, 4, suitAndOrdinalPlusOne("Flower"))
-	seasons    = domain.NewSuit("Seasons", domain.SuitTypeBonus, 4, suitAndOrdinalPlusOne("Season"))
+	dots   = domain.NewSuit("Dots", domain.SuitTypeSimple, 9, ordinalPlusOneAndSuit("Dots"))
+	bamboo = domain.NewSuit("Bamboo", domain.SuitTypeSimple, 9,
+		ordinalPlusOneAndSuit("Bamboo"))
+	characters = domain.NewSuit("Characters", domain.SuitTypeSimple, 9,
+		ordinalPlusOneAndSuit("Wan"))
+	winds   = domain.NewSuit("Winds", domain.SuitTypeHonor, 4, fixedNameFromOrdinal(windNames))
+	dragons = domain.NewSuit("Dragons", domain.SuitTypeHonor, 3,
+		fixedNameFromOrdinal(dragonNames))
+	flowers = domain.NewSuit("Flowers", domain.SuitTypeBonus, 4, suitAndOrdinalPlusOne("Flower"))
+	seasons = domain.NewSuit("Seasons", domain.SuitTypeBonus, 4, suitAndOrdinalPlusOne("Season"))
 )
 
 func ordinalPlusOneAndSuit(suffix string) domain.TileFriendlyNameFunc {
@@ -41,7 +44,7 @@ var suits = []*domain.Suit{
 	dots, bamboo, characters, winds, dragons, flowers, seasons,
 }
 
-// GetSuits returns the set of all suits used in the game.
+// GetSuitsForGame returns the set of all suits used in the game.
 func GetSuitsForGame() []*domain.Suit {
 	return suits
 }

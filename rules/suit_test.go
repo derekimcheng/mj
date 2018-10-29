@@ -10,7 +10,7 @@ import (
 	"github.com/derekimcheng/mj/domain"
 )
 
-func Test_SanityCheckCanMeld(t *testing.T) {
+func Test_CheckCanMeld(t *testing.T) {
 	meldableSuits := []*domain.Suit{dots, bamboo, characters, winds, dragons}
 	nonMeldableSuits := []*domain.Suit{flowers, seasons}
 
@@ -23,7 +23,7 @@ func Test_SanityCheckCanMeld(t *testing.T) {
 	}
 }
 
-func Test_SanityCheckCanChow(t *testing.T) {
+func Test_CheckCanChow(t *testing.T) {
 	chowableSuits := []*domain.Suit{dots, bamboo, characters}
 	nonChowableSuits := []*domain.Suit{winds, dragons, flowers, seasons}
 
@@ -36,7 +36,7 @@ func Test_SanityCheckCanChow(t *testing.T) {
 	}
 }
 
-func Test_SanityIsEligibleForHand(t *testing.T) {
+func Test_IsEligibleForHand(t *testing.T) {
 	handSuits := []*domain.Suit{dots, bamboo, characters, winds, dragons}
 	nonHandSuits := []*domain.Suit{flowers, seasons}
 
@@ -49,7 +49,7 @@ func Test_SanityIsEligibleForHand(t *testing.T) {
 	}
 }
 
-func Test_SanityTileFriendlyName(t *testing.T) {
+func Test_TileFriendlyName(t *testing.T) {
 	testCases := []struct {
 		description   string
 		suit          *domain.Suit

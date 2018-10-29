@@ -17,7 +17,8 @@ func Test_SliceDeckPopFrontBack(t *testing.T) {
 	}
 	deck := NewDeck(tiles)
 	assert.False(t, deck.IsEmpty())
-
+	assert.Equal(t, 9, deck.NumRemainingTiles())
+	
 	tile, err := deck.PopFront()
 	require.NotNil(t, tile)
 	require.Nil(t, err)

@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"github.com/derekimcheng/mj/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -10,18 +11,32 @@ func Test_NewDeckForGame(t *testing.T) {
 	deck := NewDeckForGame()
 
 	// Build a map from friendly name to count
-	friendlyNameCounts := make(map[string]int)
+	nonBonusCounts := make(map[string]int)
+	bonusCounts := make(map[string]int)
 	numTiles := 0
 	for !deck.IsEmpty() {
 		tile, _ := deck.PopFront()
 		require.NotNil(t, tile)
-		friendlyNameCounts[tile.String()]++
+		if tile.GetSuit().GetSuitType() == domain.SuitTypeBonus {
+			bonusCounts[tile.String()]++
+		} else {
+			nonBonusCounts[tile.String()]++
+		}
 		numTiles++
 	}
 
 	expectedNumTiles := 144
 	expectedNumTileValues := 42
-
+	expectedNumTilesPerValueNonBonus := 4
+	expectedNumTilesPerValueBonus := 1
 	assert.Equal(t, numTiles, expectedNumTiles)
-	assert.Len(t, friendlyNameCounts, expectedNumTileValues)
+	assert.Equal(t, expectedNumTileValues, len(nonBonusCounts)+len(bonusCounts))
+	for friendlyName, count := range nonBonusCounts {
+		assert.Equal(t, expectedNumTilesPerValueNonBonus, count,
+			"Unexpected number of tiles for %s", friendlyName)
+	}
+	for friendlyName, count := range bonusCounts {
+		assert.Equal(t, expectedNumTilesPerValueBonus, count,
+			"Unexpected number of tiles for %s", friendlyName)
+	}
 }

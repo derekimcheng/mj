@@ -29,7 +29,6 @@ func addTilesForSuit(rule tileCountRule, tiles []*domain.Tile) []*domain.Tile {
 	for ordinal := 0; ordinal < rule.suit.GetSize(); ordinal++ {
 		for id := 0; id < rule.count; id++ {
 			tile, err := domain.NewTile(rule.suit, ordinal, id)
-			fmt.Printf("Adding tile %s (id=%d) to deck\n", tile, id)
 			if err != nil {
 				panic(fmt.Errorf("Unable to create tile: suit=%s ordinal=%d id=%d",
 					rule.suit.GetName(), ordinal, id))

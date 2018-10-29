@@ -7,6 +7,8 @@ import (
 
 // Deck is a collection of Tiles from which tiles can be drawn from.
 type Deck interface {
+	// Size returns the number of remaining tiles in the deck.
+	NumRemainingTiles() int
 	// IsEmpty returns true if the Deck is empty.
 	IsEmpty() bool
 	// Shuttle randomly shuffles the tiles in the deck. It is assumed that the random source has
@@ -23,6 +25,11 @@ type Deck interface {
 // SliceDeck is an implementation of Deck using slices.
 type SliceDeck struct {
 	tiles []*Tile
+}
+
+// NumRemainingTiles .. (Deck implementation)
+func (d *SliceDeck) NumRemainingTiles() int {
+	return len(d.tiles)
 }
 
 // IsEmpty ... (Deck implementation)
