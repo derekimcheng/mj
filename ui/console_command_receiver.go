@@ -27,10 +27,10 @@ func NewConsoleCommandReceiver(r io.Reader) *ConsoleCommandReceiver {
 }
 
 // PromptForCommand ... (CommandReceiver implementation)
-func (recver *ConsoleCommandReceiver) PromptForCommand() (*Command, error) {
+func (recver *ConsoleCommandReceiver) PromptForCommand(acceptedCommands CommandTypes) (*Command, error) {
 	// Repeat until an error is encountered or a valid Command is obtained.
 	for {
-		fmt.Printf("Enter a command: ")
+		fmt.Printf("Enter a command [%s]: ", strings.Join(acceptedCommands, "|"))
 		success := recver.scanner.Scan()
 		if !success {
 			err := recver.scanner.Err()
@@ -41,28 +41,36 @@ func (recver *ConsoleCommandReceiver) PromptForCommand() (*Command, error) {
 		}
 
 		text := recver.scanner.Text()
-		cmd, err := parseCommand(text)
-		if err == nil {
-			return cmd, nil
+		if len(text) == 0 {
+			continue
 		}
-		fmt.Printf("Received error from parsing command: %s\n", err)
+
+		cmd, err := parseCommand(text)
+		if err != nil {
+			fmt.Printf("Received error from parsing command: %s\n", err)
+			continue
+		}
+		if !acceptedCommands.ContainsCommand(cmd.GetCommandType()) {
+			fmt.Printf("Unacceptable command %s\n", cmd.GetCommandType())
+			continue
+		}
+		return cmd, nil
 	}
 }
 
 func parseCommand(input string) (*Command, error) {
 	fields := strings.Fields(input)
+	if len(fields) < 1 {
+		return nil, fmt.Errorf("Fewer than 1 field in input")
+	}
 	cmdStr := fields[0]
 	args := fields[1:]
-	cmd, found := commandMapping[cmdStr]
-	if !found {
-		return nil, fmt.Errorf("Received unknown command %s", cmdStr)
-	}
 
-	switch cmd {
+	switch cmdStr {
 	case SortHand:
-		return SortHandCommand(), nil
+		return NewSortHandCommand(), nil
 	case ShowDiscardedTiles:
-		return ShowDiscardedTilesCommand(), nil
+		return NewShowDiscardedTilesCommand(), nil
 	case DiscardTile:
 		if len(args) < 1 {
 			return nil, fmt.Errorf("Not enough args for DiscardTile")
@@ -71,7 +79,9 @@ func parseCommand(input string) (*Command, error) {
 		if err != nil || index < 0 {
 			return nil, fmt.Errorf("Invalid arg for DiscardTile: %s", args[0])
 		}
-		return DiscardTileCommand(index), nil
+		return NewDiscardTileCommand(index), nil
+	case Out:
+		return NewOutCommand(), nil
 	}
 	return nil, fmt.Errorf("Unhandled command %s", cmdStr)
 }

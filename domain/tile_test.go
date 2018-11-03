@@ -39,19 +39,19 @@ func Test_NewTile(t *testing.T) {
 		{
 			"happy path 1",
 			args{suit, 0, 0},
-			&Tile{suit, 0, 0},
+			&Tile{TileBase{suit, 0}, 0},
 			false,
 		},
 		{
 			"happy path 2",
 			args{suit, 5, 5},
-			&Tile{suit, 5, 5},
+			&Tile{TileBase{suit, 5}, 5},
 			false,
 		},
 		{
 			"happy path 3",
 			args{suit, 9, 9},
-			&Tile{suit, 9, 9},
+			&Tile{TileBase{suit, 9}, 9},
 			false,
 		},
 	}

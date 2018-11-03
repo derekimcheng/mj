@@ -49,9 +49,9 @@ func GetSuitsForGame() []*domain.Suit {
 	return suits
 }
 
-// CanMeld returns whether the given suit can be considered for melds, i.e. tiles of same value and
-// suit.
-func CanMeld(s *domain.Suit) bool {
+// CanPong returns whether the given suit can be considered for pong, i.e. tiles of same value and
+// suit. Note that this also applies to kong.
+func CanPong(s *domain.Suit) bool {
 	return s.GetSuitType() == domain.SuitTypeSimple || s.GetSuitType() == domain.SuitTypeHonor
 }
 

@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"sort"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -16,10 +15,6 @@ func Test_AddRemoveTile(t *testing.T) {
 	dots := NewSuit("Dots", SuitTypeSimple, 9, nil)
 	bamboo := NewSuit("Bamboo", SuitTypeSimple, 9, nil)
 	characters := NewSuit("Characters", SuitTypeSimple, 9, nil)
-	// winds   := NewSuit("Winds", SuitTypeHonor, 4, nil)
-	// dragons := NewSuit("Dragons", SuitTypeHonor, 3, nil)
-	// flowers := NewSuit("Flowers", SuitTypeBonus, 4, nil)
-	// seasons := NewSuit("Seasons", SuitTypeBonus, 4, nil)
 
 	hand := NewHand()
 	expectedTiles := []*Tile{
@@ -80,6 +75,6 @@ func Test_HandSort(t *testing.T) {
 		hand.AddTile(tile)
 	}
 
-	sort.Sort(hand)
+	hand.Sort()
 	assert.Equal(t, sortedTiles, hand.GetTiles())
 }

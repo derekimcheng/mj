@@ -47,3 +47,28 @@ func drawTilesFromDeck(d domain.Deck, h *domain.Hand, numTiles int) {
 		h.AddTile(tile)
 	}
 }
+
+// RemoveIneligibleTilesFromHand removes ineligible (e.g. bonus) tiles from the given hand and
+// returns the removed tiles.
+func RemoveIneligibleTilesFromHand(h *domain.Hand) []*domain.Tile {
+	var eligibleTiles, ineligibleTiles []*domain.Tile
+	for _, t := range h.GetTiles() {
+		if IsEligibleForHand(t.GetSuit()) {
+			eligibleTiles = append(eligibleTiles, t)
+		} else {
+			ineligibleTiles = append(ineligibleTiles, t)
+		}
+	}
+	h.SetTiles(eligibleTiles)
+	return ineligibleTiles
+}
+
+// IsOutHand returns whether the given hand represents an Out hand.
+// An Out hand consists of a pair + triplets of pongs/kongs and melds, with a couple of exceptions:
+// (1) Seven pairs
+// (2) 13 Orphans
+func IsOutHand(h *domain.Hand) bool {
+	counter := NewHandTileCounter(GetSuitsForGame(), h)
+	// TODO: expand other rules.
+	return counter.IsSevenPairs() || counter.IsThirteenOrphans()
+}

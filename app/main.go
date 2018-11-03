@@ -3,8 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/derekimcheng/mj/domain"
+	"github.com/derekimcheng/mj/engine"
 	"github.com/derekimcheng/mj/rules"
+	"github.com/derekimcheng/mj/ui"
 	"math/rand"
 	"os"
 	"time"
@@ -53,10 +54,9 @@ func createAndDumpDeck() {
 }
 
 func simulateSingleHand() {
-	deck := rules.NewDeckForGame()
-	deck.Shuffle()
-
-	hand := domain.NewHand()
-	rules.PopulateHands(deck, []*domain.Hand{hand})
-	fmt.Printf("Populated hand: %s\n", hand)
+	runner := engine.NewSinglePlayerRunner(ui.NewConsoleCommandReceiver(os.Stdin))
+	err := runner.Start()
+	if err != nil {
+		fmt.Printf("Encountered error while running single player game: %s\n", err)
+	}
 }

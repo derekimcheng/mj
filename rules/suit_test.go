@@ -10,16 +10,26 @@ import (
 	"github.com/derekimcheng/mj/domain"
 )
 
-func Test_CheckCanMeld(t *testing.T) {
-	meldableSuits := []*domain.Suit{dots, bamboo, characters, winds, dragons}
-	nonMeldableSuits := []*domain.Suit{flowers, seasons}
+func Test_SuitsForGame(t *testing.T) {
+	var suitNameSeen map[string]bool
+	for _, s := range GetSuitsForGame() {
+		_, found := suitNameSeen[s.GetName()]
+		assert.False(t, found, "Found duplicate suit name %s", s.GetName())
+		suitNameSeen[s.GetName()] = true
+	}
+	assert.Len(t, suitNameSeen, len(GetSuitsForGame()))
+}
 
-	for _, s := range meldableSuits {
-		assert.True(t, CanMeld(s), "Cannot meld suit %s", s.GetName())
+func Test_CheckCanPong(t *testing.T) {
+	pongableSuits := []*domain.Suit{dots, bamboo, characters, winds, dragons}
+	nonPongableSuits := []*domain.Suit{flowers, seasons}
+
+	for _, s := range pongableSuits {
+		assert.True(t, CanPong(s), "Cannot pong suit %s", s.GetName())
 	}
 
-	for _, s := range nonMeldableSuits {
-		assert.False(t, CanMeld(s), "Unnexpectedly able to meld suit %s", s.GetName())
+	for _, s := range nonPongableSuits {
+		assert.False(t, CanPong(s), "Unnexpectedly able to pong suit %s", s.GetName())
 	}
 }
 

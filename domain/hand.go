@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"sort"
 	"fmt"
 )
 
@@ -19,6 +20,11 @@ func (h *Hand) GetTiles() []*Tile {
 	return h.tiles
 }
 
+// SetTiles ...
+func (h* Hand) SetTiles(tiles []*Tile) {
+	h.tiles = tiles
+}
+
 // AddTile adds the given tile to the hand.
 func (h *Hand) AddTile(t *Tile) {
 	h.tiles = append(h.tiles, t)
@@ -33,6 +39,11 @@ func (h *Hand) RemoveTile(index int) (*Tile, error) {
 	tile := h.tiles[index]
 	h.tiles = append(h.tiles[:index], h.tiles[index+1:]...)
 	return tile, nil
+}
+
+// Sort sorts the hand using the default ordering.
+func (h *Hand) Sort() {
+	sort.Sort(h)
 }
 
 // Len ... (implements sort.Interface)
