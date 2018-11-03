@@ -8,12 +8,6 @@ import (
 	"strings"
 )
 
-var commandMapping = map[string]CommandType{
-	"sort":      SortHand,
-	"discarded": ShowDiscardedTiles,
-	"discard":   DiscardTile,
-}
-
 // ConsoleCommandReceiver receives command from the an input stream, such as the console.
 type ConsoleCommandReceiver struct {
 	scanner *bufio.Scanner

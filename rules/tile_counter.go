@@ -23,59 +23,45 @@ var (
 	}
 )
 
+type tileInventory = map[*domain.Suit][][]*domain.Tile
+
 // HandTileCounter holds information on the count of each tile type + ordinal in a hand.
 type HandTileCounter struct {
-	// counter maps a suit name to a slice of counters. For each suit, the corresponding
-	// slice has length equal to the suit's size.
-	counter map[*domain.Suit][]int
+	// inventory maps a suit name and ordinal to a slice of tiles.
+	inventory        tileInventory
+	computedOutPlans *OutPlans
 }
 
 // NewHandTileCounter creates a new TileCounter with the given hand and the set of all possible
 // suits.
 func NewHandTileCounter(suits []*domain.Suit, h *domain.Hand) *HandTileCounter {
-	counter := make(map[*domain.Suit][]int)
+	inventory := make(tileInventory)
 	for _, s := range suits {
-		counter[s] = make([]int, s.GetSize())
+		inventory[s] = make([][]*domain.Tile, s.GetSize())
 	}
 	for _, t := range h.GetTiles() {
 		if !IsEligibleForHand(t.GetSuit()) {
 			panic(fmt.Errorf("Hand should not contain ineligible tiles when counting, got %s", t))
 		}
-		counter[t.GetSuit()][t.GetOrdinal()]++
+		tiles := inventory[t.GetSuit()][t.GetOrdinal()]
+		inventory[t.GetSuit()][t.GetOrdinal()] = append(tiles, t)
 	}
-	return &HandTileCounter{counter: counter}
+	return &HandTileCounter{inventory: inventory}
 }
 
-// IsSevenPairs returns true if the hand represents the "Seven Pairs" Out hand. Note that four of
-// a kind is considered as two pairs.
-func (c *HandTileCounter) IsSevenPairs() bool {
-	numPairs := 0
-	for _, suit := range c.counter {
-		for _, count := range suit {
-			if count % 2 == 0 {
-				numPairs += count / 2
-			}
-		}
+// ComputeOutPlans evalautes the current hand and generate possible Out plans for it.
+func (c *HandTileCounter) ComputeOutPlans() OutPlans {
+	if c.computedOutPlans != nil {
+		return *c.computedOutPlans
 	}
-	return numPairs == 7
-}
 
-// IsThirteenOrphans returns true if the hand represents the "Thirteen Orphans" Out hand.
-func (c *HandTileCounter) IsThirteenOrphans() bool {
+	c.computedOutPlans = &OutPlans{}
 	numTiles := 0
-	seenPair := false
-	for _, tile := range thirteenOrphanTiles {
-		count := c.counter[tile.GetSuit()][tile.GetOrdinal()]
-		if count != 1 && count != 2 {
-			return false
+	for _, suit := range c.inventory {
+		for _, tiles := range suit {
+			numTiles += len(tiles)
 		}
-		if count == 2 {
-			if seenPair {
-				return false
-			}
-			seenPair = true
-		}
-		numTiles += count
 	}
-	return numTiles == 14
+	computeOutPlans(numTiles, &c.inventory, c.computedOutPlans)
+	return *c.computedOutPlans
 }

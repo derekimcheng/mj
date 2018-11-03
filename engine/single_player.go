@@ -277,8 +277,10 @@ func (r *SinglePlayerRunner) showDiscardedTiles() {
 // panic if the hand is an out hand, or return false if it is not an out hand.
 // TODO: score the out.
 func (r *SinglePlayerRunner) checkForOut() bool {
-	isOut := rules.IsOutHand(r.hand)
-	if isOut {
+	counter := rules.NewHandTileCounter(rules.GetSuitsForGame(), r.hand)
+	plans := counter.ComputeOutPlans()
+
+	if len(plans) > 0 {
 		panic(newGameOverError(true))
 	}
 	fmt.Println("Not an Out hand!")

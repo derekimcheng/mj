@@ -11,9 +11,10 @@ const (
 	// SortHand sorts the tiles in the hand.
 	SortHand CommandType = "sort"
 	// ShowDiscardedTiles shows the tiles that have been discarded so far.
-	ShowDiscardedTiles CommandType = "showdiscarded"
+	ShowDiscardedTiles CommandType = "discarded"
 	// DiscardTile discards a tile at the given index. Corresponds to DiscardTileCommand.
 	DiscardTile CommandType = "discard"
+	// Out declares the player has reached an out hand.
 	Out CommandType = "out"
 )
 

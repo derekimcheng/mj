@@ -16,6 +16,6 @@ func Test_PopulateHands(t *testing.T) {
 	PopulateHands(deck, hands)
 
 	for _, h := range hands {
-		assert.Equal(t, numTilesPerHand, h.Len())
+		assert.Equal(t, numTilesPerHand, h.NumTiles())
 	}
 }

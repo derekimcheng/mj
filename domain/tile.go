@@ -59,23 +59,44 @@ func (t *Tile) GetOrdinal() int {
 // String ...
 func (t *Tile) String() string {
 	if t.GetSuit().friendlyNameFunc != nil {
-		return t.GetSuit().friendlyNameFunc(t)
+		return fmt.Sprintf("[%s]", t.GetSuit().friendlyNameFunc(t))
 	}
-	return fmt.Sprintf("suit:%s,ord:%d,id:%d", t.GetSuit().GetName(), t.GetOrdinal(), t.id)
+	return fmt.Sprintf("[suit:%s,ord:%d,id:%d]", t.GetSuit().GetName(), t.GetOrdinal(), t.id)
 }
 
-// CompareTiles is a comparison for tiles. Returns true if tile1 should come before tile2.
-func CompareTiles(tile1, tile2 *Tile) bool {
+// CompareTiles is a comparison for tiles. Returns a positive value if tile1 should come before
+// tile2, a negative value if tile2 should come before tile1, or 0 otherwise.
+func CompareTiles(tile1, tile2 *Tile) int {
 	if tile1.GetSuit().GetSuitType() < tile2.GetSuit().GetSuitType() {
-		return true
+		return -1
 	}
 	if tile1.GetSuit().GetSuitType() > tile2.GetSuit().GetSuitType() {
-		return false
+		return 1
 	}
 	ret := strings.Compare(tile1.GetSuit().GetName(), tile2.GetSuit().GetName())
 	if ret != 0 {
-		return ret < 0
+		return ret
 	}
 
-	return tile1.GetOrdinal() < tile2.GetOrdinal()
+	return tile1.GetOrdinal() - tile2.GetOrdinal()
+}
+
+// Tiles is a slice of Tile pointers.
+type Tiles []*Tile
+
+// Len ... (implements sort.Interface)
+func (tiles Tiles) Len() int {
+	return len(tiles)
+}
+
+// Swap ... (implements sort.Interface)
+func (tiles Tiles) Swap(i, j int) {
+	tiles[i], tiles[j] = tiles[j], tiles[i]
+}
+
+// Less ... (implements sort.Interface)
+func (tiles Tiles) Less(i, j int) bool {
+	tile1 := tiles[i]
+	tile2 := tiles[j]
+	return CompareTiles(tile1, tile2) < 0
 }

@@ -76,7 +76,7 @@ func Test_StringNilFriendlyNameFunc(t *testing.T) {
 		t.Fatalf("Failed to create new tile")
 	}
 
-	expected := "suit:Bamboo,ord:5,id:0"
+	expected := "[suit:Bamboo,ord:5,id:0]"
 	actual := tile.String()
 	if expected != actual {
 		t.Errorf("Wrong name: expected: %s, actual: %s", expected, actual)
@@ -93,7 +93,7 @@ func Test_StringNonNilFriendlyNameFunc(t *testing.T) {
 		t.Fatalf("Failed to create new tile")
 	}
 
-	expected := "Foo"
+	expected := "[Foo]"
 	actual := tile.String()
 	if expected != actual {
 		t.Errorf("Wrong name: expected: %s, actual: %s", expected, actual)

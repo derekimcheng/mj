@@ -11,7 +11,7 @@ import (
 )
 
 func Test_SuitsForGame(t *testing.T) {
-	var suitNameSeen map[string]bool
+	suitNameSeen := make(map[string]bool)
 	for _, s := range GetSuitsForGame() {
 		_, found := suitNameSeen[s.GetName()]
 		assert.False(t, found, "Found duplicate suit name %s", s.GetName())
@@ -109,7 +109,7 @@ func Test_TileFriendlyName(t *testing.T) {
 		for i := 0; i < tc.suit.GetSize(); i++ {
 			tile, _ := domain.NewTile(tc.suit, i, 0)
 			require.NotNil(t, tile)
-			assert.Equal(t, tc.expectedNames[i], tile.String(),
+			assert.Equal(t, "["+tc.expectedNames[i]+"]", tile.String(),
 				fmt.Sprintf("%s tile %d", tc.description, i))
 		}
 	}

@@ -7,7 +7,7 @@ import (
 
 // Hand represents a collection of Tiles in a player's hand.
 type Hand struct {
-	tiles []*Tile
+	tiles Tiles
 }
 
 // NewHand returns a new empty hand.
@@ -41,33 +41,35 @@ func (h *Hand) RemoveTile(index int) (*Tile, error) {
 	return tile, nil
 }
 
-// Sort sorts the hand using the default ordering.
-func (h *Hand) Sort() {
-	sort.Sort(h)
-}
-
-// Len ... (implements sort.Interface)
-func (h *Hand) Len() int {
+// NumTiles returns the number of tiles in the hand.
+func (h *Hand) NumTiles() int {
 	return len(h.tiles)
 }
 
-// Swap ... (implements sort.Interface)
-func (h *Hand) Swap(i, j int) {
-	h.tiles[i], h.tiles[j] = h.tiles[j], h.tiles[i]
+// Sort sorts the hand using the default ordering.
+func (h *Hand) Sort() {
+	sort.Sort(h.tiles)
 }
 
-// Less ... (implements sort.Interface)
-func (h *Hand) Less(i, j int) bool {
-	tile1 := h.tiles[i]
-	tile2 := h.tiles[j]
-	return CompareTiles(tile1, tile2)
+
+
+// StringWithoutIndices returns a string representation of the hand without the indices.
+func (h *Hand) StringWithoutIndices() string {
+	ret := ""
+	for _, t := range h.tiles {
+		ret += t.String()
+	}
+	return ret
 }
 
 // String ...
 func (h *Hand) String() string {
 	ret := ""
-	for _, t := range h.tiles {
-		ret += "[" + t.String() + "]"
+	for i, t := range h.tiles {
+		if i > 0 {
+			ret += ","
+		}
+		ret += fmt.Sprintf("%d:%s", i, t.String())
 	}
 	return ret
 }

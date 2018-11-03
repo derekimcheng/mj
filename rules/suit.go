@@ -41,10 +41,13 @@ func suitAndOrdinalPlusOne(prefix string) domain.TileFriendlyNameFunc {
 }
 
 var suits = []*domain.Suit{
-	dots, bamboo, characters, winds, dragons, flowers, seasons,
+	bamboo, characters, dots, // Simples
+	dragons, winds, // Honors
+	flowers, seasons, // Bonus
 }
 
 // GetSuitsForGame returns the set of all suits used in the game.
+// TODO: test that the returned suits are in sorted order.
 func GetSuitsForGame() []*domain.Suit {
 	return suits
 }
