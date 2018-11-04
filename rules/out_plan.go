@@ -185,7 +185,7 @@ func matchSevenPairs(numRemainingTiles int, inventory *tileInventory) *OutPlan {
 	}
 
 	numPairs := 0
-	var outTiles []*domain.Tile
+	var outTiles domain.Tiles
 	for _, suit := range *inventory {
 		for _, tiles := range suit {
 			if len(tiles)%2 == 0 {
@@ -208,7 +208,7 @@ func matchThirteenOrphans(numRemainingTiles int, inventory *tileInventory) *OutP
 	}
 
 	seenPair := false
-	var outTiles []*domain.Tile
+	var outTiles domain.Tiles
 	for _, tile := range thirteenOrphanTiles {
 		tiles := (*inventory)[tile.GetSuit()][tile.GetOrdinal()]
 		numTiles := len(tiles)
@@ -292,7 +292,7 @@ func computeOutPlansHelper(
 				oldTiles3 := suit[i+2]
 				for len(suit[i]) >= 1 && len(suit[i+1]) >= 1 && len(suit[i+2]) >= 1 {
 					numChows++
-					outTiles := []*domain.Tile{suit[i][0], suit[i+1][0], suit[i+2][0]}
+					outTiles := domain.Tiles{suit[i][0], suit[i+1][0], suit[i+2][0]}
 					glog.V(2).Infof("Using %s as Chow out group (%d)\n", outTiles, numChows)
 					newChowOutGroup := NewOutTileGroup(outTiles, OutTileGroupTypeChow)
 					outGroupsSoFar = append(outGroupsSoFar, newChowOutGroup)
@@ -308,8 +308,8 @@ func computeOutPlansHelper(
 					// a chow -> pair path.
 					if len(suit[i]) == 0 {
 						used = true
-						computeOutPlansHelper(numRemainingTiles-3*numChows, inventory, outGroupsSoFar,
-							pairTileGroup, outPlansSoFar)
+						computeOutPlansHelper(numRemainingTiles-3*numChows, inventory,
+							outGroupsSoFar, pairTileGroup, outPlansSoFar)
 					}
 					// Restore previous state.
 					suit[i] = oldTiles1

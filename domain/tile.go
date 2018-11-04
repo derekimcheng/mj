@@ -1,8 +1,8 @@
 package domain
 
 import (
-	"strings"
 	"fmt"
+	"strings"
 )
 
 // Tile contains an ID in addition to all of the fields in TileBase.
@@ -15,7 +15,7 @@ type Tile struct {
 
 // TileBase contains information about the suit and the value of the tile.
 type TileBase struct {
-	suit *Suit
+	suit    *Suit
 	ordinal int
 }
 

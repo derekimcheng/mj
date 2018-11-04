@@ -5,6 +5,7 @@ import (
 	"github.com/derekimcheng/mj/domain"
 	"github.com/derekimcheng/mj/rules"
 	"github.com/derekimcheng/mj/ui"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
@@ -54,18 +55,14 @@ type SinglePlayerRunner struct {
 	receiver ui.CommandReceiver
 
 	started bool
-	// TODO: maybe this would be better encapsulated in a single struct?
-	deck domain.Deck
-	hand *domain.Hand
-
-	bonusTiles     []*domain.Tile
-	discardedTiles []*domain.Tile
+	deck    domain.Deck
+	player  *rules.PlayerGameState
 }
 
 // NewSinglePlayerRunner returns a new instance of NewSinglePlayerRunner with the given input
 // parameters.
 func NewSinglePlayerRunner(receiver ui.CommandReceiver) *SinglePlayerRunner {
-	return &SinglePlayerRunner{receiver: receiver}
+	return &SinglePlayerRunner{receiver: receiver, player: nil}
 }
 
 // Start starts the game sequence. Returns an error if the game is already started (or ended), or
@@ -75,11 +72,11 @@ func (r *SinglePlayerRunner) Start() error {
 		return fmt.Errorf("Already started")
 	}
 
-	fmt.Printf("Starting single player game\n")
+	glog.V(2).Infof("Starting single player game")
 	r.started = true
 
 	r.initializeDeck()
-	err := r.initializeHandNoReplacement()
+	err := r.initializePlayer()
 	if err != nil {
 		return errors.Wrapf(err, "unable to start game")
 	}
@@ -90,21 +87,22 @@ func (r *SinglePlayerRunner) Start() error {
 }
 
 func (r *SinglePlayerRunner) initializeDeck() {
-	fmt.Printf("Initializing deck\n")
+	glog.V(2).Infof("Initializing deck\n")
 	r.deck = rules.NewDeckForGame()
 	r.deck.Shuffle()
 }
 
-func (r *SinglePlayerRunner) initializeHandNoReplacement() error {
-	fmt.Printf("Initializing hand\n")
-	r.hand = domain.NewHand()
-	err := rules.PopulateHands(r.deck, []*domain.Hand{r.hand})
+func (r *SinglePlayerRunner) initializePlayer() error {
+	glog.V(2).Infof("Initializing hand\n")
+	hand := domain.NewHand()
+	err := rules.PopulateHands(r.deck, []*domain.Hand{hand})
 	if err != nil {
 		return err
 	}
 
-	r.sortHand()
-	fmt.Printf("Populated hand: %s\n", r.hand)
+	hand.Sort()
+	r.player = rules.NewPlayerGameState(hand)
+	glog.V(2).Infof("Populated hand: %s\n", hand)
 	return nil
 }
 
@@ -113,22 +111,24 @@ func (r *SinglePlayerRunner) startGameSequence() {
 		if r := recover(); r != nil {
 			if gameOverErr, ok := r.(*gameOverError); ok {
 				// TODO: implement proper panic recovery.
-				fmt.Printf("Game over: %s\n", gameOverErr)
+				glog.V(2).Infof("Game over: %s\n", gameOverErr)
 			} else {
 				panic(r)
 			}
 		}
 	}()
 
-	fmt.Printf("Starting game sequence\n")
+	glog.V(2).Infof("Starting game sequence\n")
+	// TODO: notify observer of game start
 
 	numTilesToReplace := r.bulkMoveBonusTilesFromHand()
 	if numTilesToReplace > 0 {
 		replacementRound := 1
 		for numTilesToReplace > 0 {
-			fmt.Printf("Replacing %d bonus tiles (round %d)\n", numTilesToReplace, replacementRound)
+			glog.V(2).Infof("Replacing %d bonus tiles (round %d)\n",
+				numTilesToReplace, replacementRound)
 			for i := 0; i < numTilesToReplace; i++ {
-				tile := r.drawFromDeckFront()
+				tile := r.drawFromDeckBack()
 				r.addTileToHand(tile)
 			}
 			numTilesToReplace = r.bulkMoveBonusTilesFromHand()
@@ -137,7 +137,7 @@ func (r *SinglePlayerRunner) startGameSequence() {
 	}
 
 	r.sortHand()
-	fmt.Printf("Hand after replacement: %s\n", r.hand)
+	fmt.Printf("Hand after replacement: %s\n", r.player.GetHand())
 
 	r.startPlayerRoundLoop()
 }
@@ -145,25 +145,41 @@ func (r *SinglePlayerRunner) startGameSequence() {
 func (r *SinglePlayerRunner) startPlayerRoundLoop() {
 	round := 1
 	for {
+		// TODO: Notify observer of round start
 		fmt.Println(separator)
 		fmt.Printf("Start of round %d\n", round)
 
 		// Draw phase
 		tile := r.drawFromDeckFront()
 		fmt.Printf("Drawn tile %s\n", tile)
-
+		// TODO: add observer for player drawing tile
 		if rules.IsEligibleForHand(tile.GetSuit()) {
+			// TODO: add observer for adding tile to hand
 			r.addTileToHand(tile)
 		} else {
 			r.replaceTileLoop()
 		}
 
-		fmt.Printf("Hand: %s\n", r.hand)
+		fmt.Printf("Hand: %s\n", r.player.GetHand())
 		// Player action phase
 		r.promptAndExecutePlayerAction(
 			ui.CommandTypes{ui.SortHand, ui.ShowDiscardedTiles, ui.DiscardTile, ui.Out})
 
 		round++
+	}
+}
+
+func (r *SinglePlayerRunner) replaceTileLoop() {
+	for round := 1; ; /* no-op */ round++ {
+		fmt.Printf("Drawing a replacement tile from the back of deck (round %d)\n", round)
+		tile := r.drawFromDeckBack()
+		if rules.IsEligibleForHand(tile.GetSuit()) {
+			fmt.Printf("Adding replacement tile to hand: %s\n", tile)
+			r.addTileToHand(tile)
+			return
+		}
+		// Else tile is a bonus tile, add it and repeat.
+		r.addTileToBonusArea(tile)
 	}
 }
 
@@ -185,7 +201,7 @@ func (r *SinglePlayerRunner) promptAndExecutePlayerAction(acceptedCommands ui.Co
 func (r *SinglePlayerRunner) executePlayerAction(cmd *ui.Command) bool {
 	switch cmd.GetCommandType() {
 	case ui.SortHand:
-		r.sortAndShowHand()
+		r.sortHand()
 		return false
 	case ui.ShowDiscardedTiles:
 		r.showDiscardedTiles()
@@ -199,85 +215,11 @@ func (r *SinglePlayerRunner) executePlayerAction(cmd *ui.Command) bool {
 	return false
 }
 
-// TODO: probably a PlayerState method
-func (r *SinglePlayerRunner) bulkMoveBonusTilesFromHand() int {
-	tiles := rules.RemoveIneligibleTilesFromHand(r.hand)
-	if len(tiles) > 0 {
-		fmt.Printf("Adding tiles to bonus area: %s\n", tiles)
-	}
-	r.bonusTiles = append(r.bonusTiles, tiles...)
-	return len(tiles)
-}
-
-func (r *SinglePlayerRunner) addTileToBonusArea(t *domain.Tile) {
-	// TODO: how to sort r.bonusTiles?
-	fmt.Printf("Adding tile to bonus area: %s\n", t)
-	r.bonusTiles = append(r.bonusTiles, t)
-}
-
-func (r *SinglePlayerRunner) drawFromDeckFront() *domain.Tile {
-	tile, err := r.deck.PopFront()
-	if err != nil {
-		panic(newGameOverError(false))
-	}
-	return tile
-}
-
-func (r *SinglePlayerRunner) replaceTileLoop() {
-	for round := 1; ; /* no-op */ round++ {
-		fmt.Printf("Drawing a replacement tile from the back of deck (round %d)\n", round)
-		tile, err := r.deck.PopBack()
-		if err != nil {
-			panic(newGameOverError(false))
-		}
-		if rules.IsEligibleForHand(tile.GetSuit()) {
-			fmt.Printf("Adding replacement tile to hand: %s\n", tile)
-			r.addTileToHand(tile)
-			return
-		}
-		// Else tile is a bonus tile, add it and repeat.
-		r.addTileToBonusArea(tile)
-	}
-}
-
-func (r *SinglePlayerRunner) addTileToHand(t *domain.Tile) {
-	r.hand.AddTile(t)
-}
-
-func (r *SinglePlayerRunner) discardTile(index int) bool {
-	t, err := r.hand.RemoveTile(index)
-	if err != nil {
-		fmt.Printf("Failed to remove tile at %d: %s\n", index, err)
-		return false
-	}
-	fmt.Printf("Discarded tile at %d: %s\n", index, t)
-	r.discardedTiles = append(r.discardedTiles, t)
-	return true
-}
-
-func (r *SinglePlayerRunner) sortHand() {
-	r.hand.Sort()
-}
-
-func (r *SinglePlayerRunner) sortAndShowHand() {
-	r.sortHand()
-	r.showHand()
-}
-
-func (r *SinglePlayerRunner) showHand() {
-	fmt.Printf("Hand: %s\n", r.hand)
-}
-
-func (r *SinglePlayerRunner) showDiscardedTiles() {
-	// TODO: fix printing
-	fmt.Printf("Discarded tiles: %s\n", r.discardedTiles)
-}
-
 // checkForOut checks whether the current player state represents an Out. This function will
 // panic if the hand is an out hand, or return false if it is not an out hand.
 // TODO: score the out.
 func (r *SinglePlayerRunner) checkForOut() bool {
-	counter := rules.NewHandTileCounter(rules.GetSuitsForGame(), r.hand)
+	counter := rules.NewHandTileCounter(rules.GetSuitsForGame(), r.player.GetHand())
 	plans := counter.ComputeOutPlans()
 
 	if len(plans) > 0 {
@@ -285,4 +227,60 @@ func (r *SinglePlayerRunner) checkForOut() bool {
 	}
 	fmt.Println("Not an Out hand!")
 	return false
+}
+
+// Methods that manipulate player / deck state that should notify the observer.
+
+func (r *SinglePlayerRunner) sortHand() {
+	r.player.SortHand()
+	// TODO: Notify observer of hand sorted update.
+	fmt.Printf("Hand: %s\n", r.player.GetHand())
+}
+
+func (r *SinglePlayerRunner) showDiscardedTiles() {
+	// TODO: Notify observer of show discarded tiles.
+	fmt.Printf("Discarded tiles: %s\n", r.player.GetDiscardedTiles())
+}
+
+func (r *SinglePlayerRunner) addTileToHand(t *domain.Tile) {
+	// TODO: add observer to update hand
+	r.player.AddTileToHand(t)
+}
+
+func (r *SinglePlayerRunner) discardTile(index int) bool {
+	t, removed := r.player.DiscardTileAt(index)
+	if removed {
+		// TODO: notify observer
+		fmt.Printf("Discarded tile at %d: %s\n", index, t)
+	}
+	return removed
+}
+
+func (r *SinglePlayerRunner) bulkMoveBonusTilesFromHand() int {
+	// TODO: notify observer of moved tiles.
+	return r.player.BulkMoveBonusTilesFromHand()
+}
+
+func (r *SinglePlayerRunner) addTileToBonusArea(t *domain.Tile) {
+	fmt.Printf("Adding tile to bonus area: %s\n", t)
+	r.player.AddTileToBonusArea(t)
+	// TODO: notify observer
+}
+
+func (r *SinglePlayerRunner) drawFromDeckFront() *domain.Tile {
+	// TODO: notify observer of deck pop
+	tile, err := r.deck.PopFront()
+	if err != nil {
+		panic(newGameOverError(false))
+	}
+	return tile
+}
+
+func (r *SinglePlayerRunner) drawFromDeckBack() *domain.Tile {
+	// TODO: notify observer of deck pop
+	tile, err := r.deck.PopBack()
+	if err != nil {
+		panic(newGameOverError(false))
+	}
+	return tile
 }

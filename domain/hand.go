@@ -1,8 +1,8 @@
 package domain
 
 import (
-	"sort"
 	"fmt"
+	"sort"
 )
 
 // Hand represents a collection of Tiles in a player's hand.
@@ -21,7 +21,7 @@ func (h *Hand) GetTiles() []*Tile {
 }
 
 // SetTiles ...
-func (h* Hand) SetTiles(tiles []*Tile) {
+func (h *Hand) SetTiles(tiles []*Tile) {
 	h.tiles = tiles
 }
 
@@ -51,8 +51,6 @@ func (h *Hand) Sort() {
 	sort.Sort(h.tiles)
 }
 
-
-
 // StringWithoutIndices returns a string representation of the hand without the indices.
 func (h *Hand) StringWithoutIndices() string {
 	ret := ""
@@ -67,9 +65,9 @@ func (h *Hand) String() string {
 	ret := ""
 	for i, t := range h.tiles {
 		if i > 0 {
-			ret += ","
+			ret += ", "
 		}
-		ret += fmt.Sprintf("%d:%s", i, t.String())
+		ret += fmt.Sprintf("%d: %s", i, t.String())
 	}
 	return ret
 }
