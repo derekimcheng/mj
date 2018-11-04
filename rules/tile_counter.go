@@ -34,12 +34,16 @@ type HandTileCounter struct {
 
 // NewHandTileCounter creates a new TileCounter with the given hand and the set of all possible
 // suits.
-func NewHandTileCounter(suits []*domain.Suit, h *domain.Hand) *HandTileCounter {
+func NewHandTileCounter(suits []*domain.Suit, h *domain.Hand, discardTile *domain.Tile) *HandTileCounter {
 	inventory := make(tileInventory)
 	for _, s := range suits {
 		inventory[s] = make([][]*domain.Tile, s.GetSize())
 	}
-	for _, t := range h.GetTiles() {
+	allTiles := h.GetTiles()
+	if discardTile != nil {
+		allTiles = append(allTiles, discardTile)
+	}
+	for _, t := range allTiles {
 		if !IsEligibleForHand(t.GetSuit()) {
 			panic(fmt.Errorf("Hand should not contain ineligible tiles when counting, got %s", t))
 		}

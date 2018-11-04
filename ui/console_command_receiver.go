@@ -89,15 +89,15 @@ func parseCommand(input string) (*Command, error) {
 		return NewConcealedKongCommand(index), nil
 	case Chow:
 		if len(args) < 1 {
-			return nil, fmt.Errorf("Not enough args for ConcealedKong")
+			return nil, fmt.Errorf("Not enough args for Chow")
 		}
 		index1, err := strconv.Atoi(args[0])
 		if err != nil || index1 < 0 {
-			return nil, fmt.Errorf("Invalid arg for ConcealedKong: %s", args[0])
+			return nil, fmt.Errorf("Invalid arg for Chow: %s", args[0])
 		}
 		index2, err := strconv.Atoi(args[1])
 		if err != nil || index2 < 0 {
-			return nil, fmt.Errorf("Invalid arg for ConcealedKong: %s", args[1])
+			return nil, fmt.Errorf("Invalid arg for Chow: %s", args[1])
 		}
 		if index1 == index2 {
 			return nil, fmt.Errorf("Two different indices must be specified: %d", index1)
