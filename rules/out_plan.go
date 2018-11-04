@@ -68,6 +68,9 @@ const (
 	// OutTileGroupTypeKong represents a quadruplet of the same suit+ordinal tiles. This is only
 	// available in the meld area.
 	OutTileGroupTypeKong
+	// OutTileGroupTypeConcealedKong represents a concealed quadruplet of the same suit+ordinal
+	// tiles. This is only available in the meld area.
+	OutTileGroupTypeConcealedKong
 	// OutTileGroupTypeSevenPairs is a special designation for "Seven Pairs". All of the tiles will
 	// be represented as a single group.
 	OutTileGroupTypeSevenPairs
@@ -86,6 +89,8 @@ func (t OutTileGroupType) String() string {
 		return "Pong"
 	case OutTileGroupTypeKong:
 		return "Kong"
+	case OutTileGroupTypeConcealedKong:
+		return "ConcealedKong"
 	case OutTileGroupTypeSevenPairs:
 		return "SevenPairs"
 	case OutTileGroupTypeThirteenOrphans:

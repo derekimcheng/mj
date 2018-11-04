@@ -74,6 +74,40 @@ func parseCommand(input string) (*Command, error) {
 			return nil, fmt.Errorf("Invalid arg for DiscardTile: %s", args[0])
 		}
 		return NewDiscardTileCommand(index), nil
+	case Pong:
+		return NewPongCommand(), nil
+	case Kong:
+		return NewKongCommand(), nil
+	case ConcealedKong:
+		if len(args) < 1 {
+			return nil, fmt.Errorf("Not enough args for ConcealedKong")
+		}
+		index, err := strconv.Atoi(args[0])
+		if err != nil || index < 0 {
+			return nil, fmt.Errorf("Invalid arg for ConcealedKong: %s", args[0])
+		}
+		return NewConcealedKongCommand(index), nil
+	case Chow:
+		if len(args) < 1 {
+			return nil, fmt.Errorf("Not enough args for ConcealedKong")
+		}
+		index1, err := strconv.Atoi(args[0])
+		if err != nil || index1 < 0 {
+			return nil, fmt.Errorf("Invalid arg for ConcealedKong: %s", args[0])
+		}
+		index2, err := strconv.Atoi(args[1])
+		if err != nil || index2 < 0 {
+			return nil, fmt.Errorf("Invalid arg for ConcealedKong: %s", args[1])
+		}
+		if index1 == index2 {
+			return nil, fmt.Errorf("Two different indices must be specified: %d", index1)
+		}
+		if index1 > index2 {
+			index1, index2 = index2, index1
+		}
+		return NewChowCommand(index1, index2), nil
+	case Pass:
+		return NewPassCommand(), nil
 	case Out:
 		return NewOutCommand(), nil
 	}

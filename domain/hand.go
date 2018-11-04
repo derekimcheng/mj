@@ -33,12 +33,20 @@ func (h *Hand) AddTile(t *Tile) {
 // RemoveTile removes the tile at the given index and returns it. Returns an error if the index is
 // out of bounds.
 func (h *Hand) RemoveTile(index int) (*Tile, error) {
+	tile, err := h.GetTileAt(index)
+	if err != nil {
+		return nil, err
+	}
+	h.tiles = append(h.tiles[:index], h.tiles[index+1:]...)
+	return tile, nil
+}
+
+// GetTileAt returns the tile at the given index. Returns an error if the index is out of bounds.
+func (h *Hand) GetTileAt(index int) (*Tile, error) {
 	if index < 0 || index >= len(h.tiles) {
 		return nil, fmt.Errorf("Index %d out of bounds [0, %d)", index, len(h.tiles))
 	}
-	tile := h.tiles[index]
-	h.tiles = append(h.tiles[:index], h.tiles[index+1:]...)
-	return tile, nil
+	return h.tiles[index], nil
 }
 
 // NumTiles returns the number of tiles in the hand.
