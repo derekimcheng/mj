@@ -64,7 +64,7 @@ func Test_ComputeOutPlans_AllPongs(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	counter := NewHandTileCounter(GetSuitsForGame(), hand)
+	counter := NewHandTileCounter(GetSuitsForGame(), hand, nil)
 	plans := counter.ComputeOutPlans()
 	// Note: the tiles created below have the same data layout as the tiles above, but they are
 	// distinct objects. The test assertions below rely on deep comparison for this test to pass.
@@ -96,7 +96,7 @@ func Test_ComputeOutPlans_AllPongs(t *testing.T) {
 			}, OutTileGroupTypePair),
 		}),
 	}
-	
+
 	assert.Equal(t, expected, plans)
 }
 
@@ -120,7 +120,7 @@ func Test_ComputeOutPlans_PongsOrChows(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	counter := NewHandTileCounter(GetSuitsForGame(), hand)
+	counter := NewHandTileCounter(GetSuitsForGame(), hand, nil)
 	plans := counter.ComputeOutPlans()
 
 	expected := OutPlans{
@@ -262,7 +262,7 @@ func Test_ComputeOutPlans_NineGates(t *testing.T) {
 		outTile := domain.CreateTileForTest(t, dots, x)
 		hand.AddTile(outTile)
 
-		counter := NewHandTileCounter(GetSuitsForGame(), hand)
+		counter := NewHandTileCounter(GetSuitsForGame(), hand, nil)
 		plans := counter.ComputeOutPlans()
 		assert.NotEmpty(t, plans, "Nine gates failed with tile %s", outTile)
 	}
@@ -288,7 +288,7 @@ func Test_ComputeOutPlans_ThreeQuadruples(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	counter := NewHandTileCounter(GetSuitsForGame(), hand)
+	counter := NewHandTileCounter(GetSuitsForGame(), hand, nil)
 	plans := counter.ComputeOutPlans()
 
 	expected := OutPlans{
@@ -393,7 +393,7 @@ func Test_ComputeOutPlans_ThreeQuadruples(t *testing.T) {
 			}, OutTileGroupTypePair),
 		}),
 	}
-	
+
 	assert.Equal(t, expected, plans)
 }
 
@@ -408,9 +408,9 @@ func Test_ComputeOutPlans_PairAndAChow(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	counter := NewHandTileCounter(GetSuitsForGame(), hand)
+	counter := NewHandTileCounter(GetSuitsForGame(), hand, nil)
 	plans := counter.ComputeOutPlans()
-	
+
 	expected := OutPlans{
 		NewOutPlan(OutTileGroups{
 			NewOutTileGroup(domain.Tiles{
@@ -424,6 +424,6 @@ func Test_ComputeOutPlans_PairAndAChow(t *testing.T) {
 			}, OutTileGroupTypeChow),
 		}),
 	}
-	
+
 	assert.Equal(t, expected, plans)
 }

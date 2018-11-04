@@ -140,6 +140,7 @@ func (r *SinglePlayerRunner) startGameSequence() {
 			if gameOverErr, ok := r.(*gameOverError); ok {
 				// TODO: implement proper panic recovery.
 				glog.V(2).Infof("Game over: %s\n", gameOverErr)
+				fmt.Printf("Game over: %s\n", gameOverErr)
 			} else {
 				panic(r)
 			}
@@ -157,7 +158,7 @@ func (r *SinglePlayerRunner) startGameSequence() {
 				numTilesToReplace, replacementRound)
 			for i := 0; i < numTilesToReplace; i++ {
 				tile := r.drawFromDeckBack()
-				r.addTileToHand(tile)
+				r.addTileToHandNoCheck(tile)
 			}
 			numTilesToReplace = r.bulkMoveBonusTilesFromHand()
 			replacementRound++
@@ -225,7 +226,7 @@ func (r *SinglePlayerRunner) burnSingleTile(chowAllowed bool) bool {
 	}
 
 	// TODO: add observer for "other" player about to discard tile
-	fmt.Printf("Burning tile %d\n")
+	fmt.Printf("Burning tile %s\n", tile)
 	r.currentBurnTile = tile
 
 	var cmdType ui.CommandType
@@ -308,7 +309,8 @@ func (r *SinglePlayerRunner) executePlayerAction(cmd *ui.Command) bool {
 // TODO: score the out.
 func (r *SinglePlayerRunner) checkForOut() bool {
 	// TODO: also include r.currentBurnTile in the out.
-	counter := rules.NewHandTileCounter(rules.GetSuitsForGame(), r.player.GetHand())
+	counter := rules.NewHandTileCounter(rules.GetSuitsForGame(), r.player.GetHand(),
+		r.currentBurnTile)
 	plans := counter.ComputeOutPlans()
 
 	if len(plans) > 0 {
@@ -334,6 +336,11 @@ func (r *SinglePlayerRunner) showDiscardedTiles() {
 func (r *SinglePlayerRunner) addTileToHand(t *domain.Tile) {
 	// TODO: add observer to update hand
 	r.player.AddTileToHand(t)
+}
+
+func (r *SinglePlayerRunner) addTileToHandNoCheck(t *domain.Tile) {
+	// TODO: add observer to update hand
+	r.player.AddTileToHandNoCheck(t)
 }
 
 func (r *SinglePlayerRunner) discardTile(index int) bool {
@@ -363,10 +370,12 @@ func (r *SinglePlayerRunner) declarePong() bool {
 	}
 
 	removed := r.player.DeclarePong(r.currentBurnTile)
-	if removed {
-		// TODO: notify observer of meld area / hand change
-		fmt.Printf("Declared pong %s\n", r.currentBurnTile)
+	if !removed {
+		fmt.Printf("Failed to declare pong\n")
+		return false
 	}
+	// TODO: notify observer of meld area / hand change
+	fmt.Printf("Declared pong %s\n", r.currentBurnTile)
 	r.currentBurnTile = nil
 	r.promptAndExecutePlayerAction(withCommands(ui.DiscardTile))
 	return removed
@@ -379,10 +388,13 @@ func (r *SinglePlayerRunner) declareKong() bool {
 	}
 
 	removed := r.player.DeclareKong(r.currentBurnTile)
-	if removed {
-		// TODO: notify observer of meld area / hand change
-		fmt.Printf("Declared kong %s\n", r.currentBurnTile)
+	if !removed {
+		fmt.Printf("Failed to declare kong\n")
+		return false
 	}
+
+	// TODO: notify observer of meld area / hand change
+	fmt.Printf("Declared kong %s\n", r.currentBurnTile)
 	r.currentBurnTile = nil
 
 	// After drawing the replacement tile, the player may go out, or they must discard a tile.
@@ -416,13 +428,16 @@ func (r *SinglePlayerRunner) declareChow(index1, index2 int) bool {
 	}
 
 	tiles, removed := r.player.DeclareChow(r.currentBurnTile, index1, index2)
-	if removed {
-		// TODO: notify observer of meld area / hand change
-		fmt.Printf("Declared chow %s\n", tiles)
+	if !removed {
+		fmt.Printf("Failed to declared chow\n")
+		return false
 	}
+
+	fmt.Printf("Declared chow %s\n", tiles)
+	// TODO: notify observer of meld area / hand change
 	r.currentBurnTile = nil
 	r.promptAndExecutePlayerAction(withCommands(ui.DiscardTile))
-	return removed
+	return true
 }
 
 func (r *SinglePlayerRunner) bulkMoveBonusTilesFromHand() int {
