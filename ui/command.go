@@ -14,26 +14,60 @@ const (
 	ShowDiscardedTiles CommandType = "discarded"
 	// DiscardTile discards a tile at the given index. Corresponds to DiscardTileCommand.
 	DiscardTile CommandType = "discard"
+	// Pong creates a meld from a pong tile group. Only available if the tile completing the
+	// meld is discarded by other players.
+	Pong CommandType = "pong"
+	// Kong creates a meld from a kong tile group. Only available if the tile completing the
+	// meld is discarded by other players.
+	Kong CommandType = "kong"
+	// ConcealedKong creates a concealed meld from a kong tile group. Only available if the tile
+	// completing the meld is drawn.
+	ConcealedKong CommandType = "ckong"
+	// Chow creates a meld from a chow tile group. Only available if the tile completing the
+	// meld is discarded by previous player.
+	Chow CommandType = "chow"
+	// Pass allows the player to pass on a tile about to be discarded by other players.
+	Pass CommandType = "pass"
 	// Out declares the player has reached an out hand.
 	Out CommandType = "out"
 )
 
-// DiscardTileCommand represents information of a DiscardTile command.
-type DiscardTileCommand struct {
-	// The index of the tile to be discarded.
+// TileIndexCommand represents information of a command that specifies a tile index.
+type TileIndexCommand struct {
+	// index is the index of the tile to use in the command.
 	index int
 }
 
 // GetIndex ...
-func (d *DiscardTileCommand) GetIndex() int {
-	return d.index
+func (c *TileIndexCommand) GetIndex() int {
+	return c.index
+}
+
+// TileIndexCommand2 represents information of a command that specifies 2 indices.
+type TileIndexCommand2 struct {
+	// index1 is the index of the first of the 2 tiles to use in the command.
+	index1 int
+	// index2 is the index of the second of the 2 tiles to use in the command.
+	index2 int
+}
+
+// GetIndex1 ...
+func (c *TileIndexCommand2) GetIndex1() int {
+	return c.index1
+}
+
+// GetIndex2 ...
+func (c *TileIndexCommand2) GetIndex2() int {
+	return c.index2
 }
 
 // Command represents a command from an input that may modify the state of the game.
 type Command struct {
 	commandType CommandType
-	// discardTile is only set if commandType is DiscardTile.
-	discardTile *DiscardTileCommand
+	// tile is only set if commandType is DiscardTile / ConcealedKong.
+	tile *TileIndexCommand
+	// tile is only set if commandType is Chow.
+	tile2 *TileIndexCommand2
 }
 
 // GetCommandType ...
@@ -41,13 +75,20 @@ func (c *Command) GetCommandType() CommandType {
 	return c.commandType
 }
 
-// GetDiscardTileCommand ...
-func (c *Command) GetDiscardTileCommand() *DiscardTileCommand {
-	if c.commandType != DiscardTile {
-		fmt.Printf("ERROR: Command is not of type DiscardTile: %s\n", c.commandType)
-		return nil
+// GetTileIndexCommand ...
+func (c *Command) GetTileIndexCommand() *TileIndexCommand {
+	if c.commandType != DiscardTile && c.commandType != ConcealedKong {
+		panic(fmt.Errorf("invalid command type for TileIndexCommand: %s", c.commandType))
 	}
-	return c.discardTile
+	return c.tile
+}
+
+// GetTileIndexCommand2 ...
+func (c *Command) GetTileIndexCommand2() *TileIndexCommand2 {
+	if c.commandType != Chow {
+		panic(fmt.Errorf("invalid command type for TileIndexCommand2: %s", c.commandType))
+	}
+	return c.tile2
 }
 
 // NewSortHandCommand returns a new SortHand command.
@@ -62,7 +103,33 @@ func NewShowDiscardedTilesCommand() *Command {
 
 // NewDiscardTileCommand returns a new DiscardTile command with the given index.
 func NewDiscardTileCommand(index int) *Command {
-	return &Command{commandType: DiscardTile, discardTile: &DiscardTileCommand{index: index}}
+	return &Command{commandType: DiscardTile, tile: &TileIndexCommand{index: index}}
+}
+
+// NewPongCommand returns a new Pong command.
+func NewPongCommand() *Command {
+	return &Command{commandType: Pong}
+}
+
+// NewKongCommand returns a new Kong command.
+func NewKongCommand() *Command {
+	return &Command{commandType: Kong}
+}
+
+// NewConcealedKongCommand returns a new ConcealedKong command with the given index.
+func NewConcealedKongCommand(index int) *Command {
+	return &Command{commandType: ConcealedKong, tile: &TileIndexCommand{index: index}}
+}
+
+// NewChowCommand returns a new Chow command with the given indices.
+func NewChowCommand(index1, index2 int) *Command {
+	return &Command{commandType: Chow,
+		tile2: &TileIndexCommand2{index1: index1, index2: index2}}
+}
+
+// NewPassCommand retrurns a new Out command.
+func NewPassCommand() *Command {
+	return &Command{commandType: Pass}
 }
 
 // NewOutCommand retrurns a new Out command.
