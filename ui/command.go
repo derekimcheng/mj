@@ -23,6 +23,9 @@ const (
 	// ConcealedKong creates a concealed meld from a kong tile group. Only available if the tile
 	// completing the meld is drawn.
 	ConcealedKong CommandType = "ckong"
+	// AdditionalKong converts a melded pong to a kong. Only available if the tile completing the
+	// kong is drawn.
+	AdditionalKong CommandType = "akong"
 	// Chow creates a meld from a chow tile group. Only available if the tile completing the
 	// meld is discarded by previous player.
 	Chow CommandType = "chow"
@@ -64,7 +67,7 @@ func (c *TileIndexCommand2) GetIndex2() int {
 // Command represents a command from an input that may modify the state of the game.
 type Command struct {
 	commandType CommandType
-	// tile is only set if commandType is DiscardTile / ConcealedKong.
+	// tile is only set if commandType is DiscardTile / ConcealedKong / AdditionalKong.
 	tile *TileIndexCommand
 	// tile is only set if commandType is Chow.
 	tile2 *TileIndexCommand2
@@ -77,7 +80,9 @@ func (c *Command) GetCommandType() CommandType {
 
 // GetTileIndexCommand ...
 func (c *Command) GetTileIndexCommand() *TileIndexCommand {
-	if c.commandType != DiscardTile && c.commandType != ConcealedKong {
+	if c.commandType != DiscardTile &&
+		c.commandType != ConcealedKong &&
+		c.commandType != AdditionalKong {
 		panic(fmt.Errorf("invalid command type for TileIndexCommand: %s", c.commandType))
 	}
 	return c.tile
@@ -119,6 +124,11 @@ func NewKongCommand() *Command {
 // NewConcealedKongCommand returns a new ConcealedKong command with the given index.
 func NewConcealedKongCommand(index int) *Command {
 	return &Command{commandType: ConcealedKong, tile: &TileIndexCommand{index: index}}
+}
+
+// NewAdditionalKongCommand returns a new AdditionalKong command with the given index.
+func NewAdditionalKongCommand(index int) *Command {
+	return &Command{commandType: AdditionalKong, tile: &TileIndexCommand{index: index}}
 }
 
 // NewChowCommand returns a new Chow command with the given indices.

@@ -64,20 +64,15 @@ func (t *Tile) String() string {
 	return fmt.Sprintf("[suit:%s,ord:%d,id:%d]", t.GetSuit().GetName(), t.GetOrdinal(), t.id)
 }
 
-// CompareTiles is a comparison for tiles. Returns a positive value if tile1 should come before
-// tile2, a negative value if tile2 should come before tile1, or 0 otherwise.
+// CompareTiles is a comparison for tiles. Returns a positive value if tile1 should come
+// before tile2, a negative value if tile2 should come before tile1, or 0 otherwise.
 func CompareTiles(tile1, tile2 *Tile) int {
-	if tile1.GetSuit().GetSuitType() < tile2.GetSuit().GetSuitType() {
-		return -1
+	if suitTypeDiff := tile1.GetSuit().GetSuitType() - tile2.GetSuit().GetSuitType(); suitTypeDiff != 0 {
+		return int(suitTypeDiff)
 	}
-	if tile1.GetSuit().GetSuitType() > tile2.GetSuit().GetSuitType() {
-		return 1
+	if suitDiff := strings.Compare(tile1.GetSuit().GetName(), tile2.GetSuit().GetName()); suitDiff != 0 {
+		return suitDiff
 	}
-	ret := strings.Compare(tile1.GetSuit().GetName(), tile2.GetSuit().GetName())
-	if ret != 0 {
-		return ret
-	}
-
 	return tile1.GetOrdinal() - tile2.GetOrdinal()
 }
 

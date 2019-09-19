@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"github.com/derekimcheng/mj/flags"
 	"github.com/derekimcheng/mj/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -8,7 +9,9 @@ import (
 )
 
 func Test_NewDeckForGame(t *testing.T) {
-	deck := NewDeckForGame()
+	deck, err := NewDeckForGame(flags.RuleNameHK)
+	require.NotNil(t, deck)
+	assert.NoError(t, err)
 
 	// Build a map from friendly name to count
 	nonBonusCounts := make(map[string]int)
@@ -39,4 +42,10 @@ func Test_NewDeckForGame(t *testing.T) {
 		assert.Equal(t, expectedNumTilesPerValueBonus, count,
 			"Unexpected number of tiles for %s", friendlyName)
 	}
+}
+
+func Test_NewDeckForGame_UnknownRule(t *testing.T) {
+	deck, err := NewDeckForGame("unknownrule")
+	assert.Nil(t, deck)
+	assert.Error(t, err)
 }

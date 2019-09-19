@@ -87,6 +87,15 @@ func parseCommand(input string) (*Command, error) {
 			return nil, fmt.Errorf("Invalid arg for ConcealedKong: %s", args[0])
 		}
 		return NewConcealedKongCommand(index), nil
+	case AdditionalKong:
+		if len(args) < 1 {
+			return nil, fmt.Errorf("Not enough args for AdditionalKong")
+		}
+		index, err := strconv.Atoi(args[0])
+		if err != nil || index < 0 {
+			return nil, fmt.Errorf("Invalid arg for AdditionalKong: %s", args[0])
+		}
+		return NewAdditionalKongCommand(index), nil
 	case Chow:
 		if len(args) < 1 {
 			return nil, fmt.Errorf("Not enough args for Chow")
@@ -111,5 +120,5 @@ func parseCommand(input string) (*Command, error) {
 	case Out:
 		return NewOutCommand(), nil
 	}
-	return nil, fmt.Errorf("Unhandled command %s", cmdStr)
+	return nil, fmt.Errorf("Unrecognized command %s", cmdStr)
 }

@@ -17,7 +17,7 @@ func NewHand() *Hand {
 
 // GetTiles ...
 func (h *Hand) GetTiles() []*Tile {
-	return h.tiles
+	return append(h.tiles)
 }
 
 // SetTiles ...

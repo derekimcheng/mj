@@ -4,23 +4,23 @@ import (
 	"flag"
 	"fmt"
 	"github.com/derekimcheng/mj/engine"
+	"github.com/derekimcheng/mj/flags"
 	"github.com/derekimcheng/mj/rules"
 	"github.com/derekimcheng/mj/ui"
+	"github.com/pkg/errors"
 	"math/rand"
 	"os"
 	"time"
 )
 
-var modeFlag = flag.String("mode", "", "App mode")
-
 func main() {
 	fmt.Println("mj Hello world")
 	initialize()
 
-	switch *modeFlag {
-	case "deck":
+	switch *flags.ModeFlag {
+	case flags.AppModeDeck:
 		createAndDumpDeck()
-	case "single":
+	case flags.AppModeSingle:
 		simulateSingleHand()
 	default:
 		printUsage()
@@ -35,14 +35,16 @@ func initialize() {
 }
 
 func printUsage() {
-	fmt.Println("usage: ./app -mode={mode}")
-	fmt.Println("mode can be one of: deck, single")
+	fmt.Println("usage: see ./app -help")
 }
 
 // createAndDumpDeck creates a game deck and empties it, logging each tile in the order they are
 // drawn.
 func createAndDumpDeck() {
-	deck := rules.NewDeckForGame()
+	deck, err := rules.NewDeckForGame(*flags.RuleNameFlag)
+	if err != nil {
+		panic(errors.Wrapf(err, "failed to create deck"))
+	}
 	deck.Shuffle()
 	for !deck.IsEmpty() {
 		tile, err := deck.PopFront()

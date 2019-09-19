@@ -1,9 +1,9 @@
 package engine
 
 import (
-	"flag"
 	"fmt"
 	"github.com/derekimcheng/mj/domain"
+	"github.com/derekimcheng/mj/flags"
 	"github.com/derekimcheng/mj/rules"
 	"github.com/derekimcheng/mj/ui"
 	"github.com/golang/glog"
@@ -24,14 +24,13 @@ func (e *gameOverError) Error() string {
 	return fmt.Sprintf("Game over. Declared out? %t", e.outDeclared)
 }
 
-var numBurnsFlag = flag.Int("numBurns", 0, "Number of tiles to burn in each round")
-
 const (
 	separator = "==============================================================="
 )
 
 var (
-	commonCommands = ui.CommandTypes{ui.SortHand, ui.ShowDiscardedTiles}
+	commonCommands           = ui.CommandTypes{ui.SortHand, ui.ShowDiscardedTiles}
+	commandsAfterDrawingTile = withCommands(ui.DiscardTile, ui.ConcealedKong, ui.AdditionalKong, ui.Out)
 )
 
 func withCommands(types ...ui.CommandType) ui.CommandTypes {
@@ -54,9 +53,9 @@ func withCommands(types ...ui.CommandType) ui.CommandTypes {
 // (D3) If the drawn tile results in a winning hand, the player may declare Out. The game is over.
 // Player action:
 // (P1) The player may choose to do the following:
-//        Declare a (concealed) Kong -> the kong tiles are moved to the meld area. Run through step
-//        (D2)', then repeat (P1).
-//        Declare Out -> the game is over.
+//        - Declare a concealed or additional Kong -> the kong tiles are moved to the meld area. Run
+//        through step (D2)', then repeat (P1).
+//        - Declare Out -> the game is over.
 // Discard:
 // (R1) The player discards a tile from their hand. That tile is moved to the discard area.
 // Burn:
@@ -87,10 +86,10 @@ type SinglePlayerRunner struct {
 // NewSinglePlayerRunner returns a new instance of NewSinglePlayerRunner with the given input
 // parameters.
 func NewSinglePlayerRunner(receiver ui.CommandReceiver) *SinglePlayerRunner {
-	if *numBurnsFlag < 0 || *numBurnsFlag > 3 {
-		panic(fmt.Errorf("Invalid value for numBurnsFlag: %d", *numBurnsFlag))
+	if *flags.NumBurnsFlag < 0 || *flags.NumBurnsFlag > 3 {
+		panic(fmt.Errorf("Invalid value for numBurnsFlag: %d", *flags.NumBurnsFlag))
 	}
-	return &SinglePlayerRunner{receiver: receiver, numBurnsPerRound: *numBurnsFlag}
+	return &SinglePlayerRunner{receiver: receiver, numBurnsPerRound: *flags.NumBurnsFlag}
 }
 
 // Start starts the game sequence. Returns an error if the game is already started (or ended), or
@@ -116,7 +115,11 @@ func (r *SinglePlayerRunner) Start() error {
 
 func (r *SinglePlayerRunner) initializeDeck() {
 	glog.V(2).Infof("Initializing deck\n")
-	r.deck = rules.NewDeckForGame()
+	deck, err := rules.NewDeckForGame(*flags.RuleNameFlag)
+	if err != nil {
+		panic(errors.Wrapf(err, "failed to initialize deck"))
+	}
+	r.deck = deck
 	r.deck.Shuffle()
 }
 
@@ -192,17 +195,18 @@ func (r *SinglePlayerRunner) startPlayerRoundLoop() {
 
 		fmt.Printf("Hand: %s\n", r.player.GetHand())
 		// Player action phase
-		r.promptAndExecutePlayerAction(withCommands(ui.DiscardTile, ui.ConcealedKong, ui.Out))
+		r.promptAndExecutePlayerAction(commandsAfterDrawingTile)
 
 		// Burn phase
 		for x := 0; x < r.numBurnsPerRound; x++ {
-			fmt.Printf("Burn sub-round %d\n", x+1)
+			fmt.Printf("Burn %d of %d in round %d\n", x+1, r.numBurnsPerRound+1, round)
 			// Allow chow in the last burn
 			chowAllowed := x == r.numBurnsPerRound-1
 			melded := r.burnSingleTile(chowAllowed)
 			if melded {
-				fmt.Printf("Exiting burn phase due to meld\n")
-				break
+				fmt.Printf("Restarting burn phase due to meld\n")
+				x = 0
+				round++
 			}
 		}
 		round++
@@ -292,6 +296,8 @@ func (r *SinglePlayerRunner) executePlayerAction(cmd *ui.Command) bool {
 		return r.declareKong()
 	case ui.ConcealedKong:
 		return r.declareConcealedKong(cmd.GetTileIndexCommand().GetIndex())
+	case ui.AdditionalKong:
+		return r.declareAdditionalKong(cmd.GetTileIndexCommand().GetIndex())
 	case ui.Chow:
 		return r.declareChow(
 			cmd.GetTileIndexCommand2().GetIndex1(), cmd.GetTileIndexCommand2().GetIndex2())
@@ -399,7 +405,7 @@ func (r *SinglePlayerRunner) declareKong() bool {
 
 	// After drawing the replacement tile, the player may go out, or they must discard a tile.
 	r.replaceTileLoop()
-	r.promptAndExecutePlayerAction(withCommands(ui.DiscardTile, ui.Out))
+	r.promptAndExecutePlayerAction(commandsAfterDrawingTile)
 	return removed
 }
 
@@ -417,7 +423,25 @@ func (r *SinglePlayerRunner) declareConcealedKong(index int) bool {
 	// Note this may result in a recursion.
 	// TODO: don't do recursion?
 	r.replaceTileLoop()
-	r.promptAndExecutePlayerAction(withCommands(ui.DiscardTile, ui.ConcealedKong, ui.Out))
+	r.promptAndExecutePlayerAction(commandsAfterDrawingTile)
+	return removed
+}
+
+func (r *SinglePlayerRunner) declareAdditionalKong(index int) bool {
+	t, removed := r.player.DeclareAdditionalKong(index)
+	if !removed {
+		glog.V(2).Infof("Failed to declare additional kong with tile at %d\n", index)
+		return false
+	}
+
+	// TODO: notify observer of meld area / hand change
+	fmt.Printf("Declared additional kong %s\n", t)
+
+	// After drawing the replacement tile, the player may go out, or have another concealed kong.
+	// Note this may result in a recursion.
+	// TODO: don't do recursion?
+	r.replaceTileLoop()
+	r.promptAndExecutePlayerAction(commandsAfterDrawingTile)
 	return removed
 }
 

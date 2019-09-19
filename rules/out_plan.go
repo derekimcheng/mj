@@ -107,30 +107,40 @@ type OutTileGroup struct {
 	groupType OutTileGroupType
 }
 
+// UpgradeToKong upgrades the group from Pong to Kong as a result of additional Kong. It is an error
+// to call this if the group cannot be upgraded with the given tile.
+func (g *OutTileGroup) UpgradeToKong(tile *domain.Tile) {
+	if g.groupType != OutTileGroupTypePong || domain.CompareTiles(g.tiles[0], tile) != 0 {
+		panic(fmt.Errorf("UpgradeToKong failed for group %s, tile %s", g, tile))
+	}
+	g.tiles = append(g.tiles, tile)
+	g.groupType = OutTileGroupTypeKong
+}
+
 // GetTiles ...
-func (g OutTileGroup) GetTiles() domain.Tiles {
+func (g *OutTileGroup) GetTiles() domain.Tiles {
 	return g.tiles
 }
 
 // GetGroupType ...
-func (g OutTileGroup) GetGroupType() OutTileGroupType {
+func (g *OutTileGroup) GetGroupType() OutTileGroupType {
 	return g.groupType
 }
 
 // String ...
-func (g OutTileGroup) String() string {
+func (g *OutTileGroup) String() string {
 	return fmt.Sprintf("%s: %v", g.groupType, g.tiles)
 }
 
 // NewOutTileGroup creates a new OutTileGroup with the given parameters. The input tiles is not
 // copied, and will be modified by sorting.
-func NewOutTileGroup(tiles domain.Tiles, groupType OutTileGroupType) OutTileGroup {
+func NewOutTileGroup(tiles domain.Tiles, groupType OutTileGroupType) *OutTileGroup {
 	sort.Sort(tiles)
-	return OutTileGroup{tiles: tiles, groupType: groupType}
+	return &OutTileGroup{tiles: tiles, groupType: groupType}
 }
 
 // OutTileGroups is a slice of OutTileGroup.
-type OutTileGroups []OutTileGroup
+type OutTileGroups []*OutTileGroup
 
 // Len ... (implements sort.Interface)
 func (groups OutTileGroups) Len() int {
@@ -144,12 +154,11 @@ func (groups OutTileGroups) Swap(i, j int) {
 
 // Less ... (implements sort.Interface)
 func (groups OutTileGroups) Less(i, j int) bool {
-	groupSlice := []OutTileGroup(groups)
-	res := domain.CompareTiles(groupSlice[i].GetTiles()[0], groupSlice[j].GetTiles()[0])
+	res := domain.CompareTiles(groups[i].GetTiles()[0], groups[j].GetTiles()[0])
 	if res != 0 {
 		return res < 0
 	}
-	return groupSlice[i].GetGroupType() < groupSlice[j].GetGroupType()
+	return groups[i].GetGroupType() < groups[j].GetGroupType()
 }
 
 type specialPlanMatcherFunc func(numRemainingTiles int, inventory *tileInventory) *OutPlan
@@ -202,7 +211,7 @@ func matchSevenPairs(numRemainingTiles int, inventory *tileInventory) *OutPlan {
 	if numPairs != 7 {
 		return nil
 	}
-	plan := NewOutPlan([]OutTileGroup{NewOutTileGroup(outTiles, OutTileGroupTypeSevenPairs)})
+	plan := NewOutPlan(OutTileGroups{NewOutTileGroup(outTiles, OutTileGroupTypeSevenPairs)})
 	return &plan
 }
 
@@ -228,14 +237,14 @@ func matchThirteenOrphans(numRemainingTiles int, inventory *tileInventory) *OutP
 		}
 		outTiles = append(outTiles, tiles...)
 	}
-	plan := NewOutPlan([]OutTileGroup{NewOutTileGroup(outTiles, OutTileGroupTypeThirteenOrphans)})
+	plan := NewOutPlan(OutTileGroups{NewOutTileGroup(outTiles, OutTileGroupTypeThirteenOrphans)})
 	return &plan
 }
 
 func computeOutPlansHelper(
 	numRemainingTiles int,
 	inventory *tileInventory,
-	outGroupsSoFar []OutTileGroup,
+	outGroupsSoFar OutTileGroups,
 	pairTileGroup *OutTileGroup,
 	outPlansSoFar *OutPlans) {
 	if numRemainingTiles == 0 {
@@ -243,7 +252,7 @@ func computeOutPlansHelper(
 			glog.V(2).Infof("Base case: not a valid plan because there is no pair group")
 			return
 		}
-		outGroupsSoFar := append(outGroupsSoFar, *pairTileGroup)
+		outGroupsSoFar := append(outGroupsSoFar, pairTileGroup)
 		outPlan := NewOutPlan(outGroupsSoFar)
 		*outPlansSoFar = append(*outPlansSoFar, outPlan)
 		glog.V(2).Infof("Base case: added valid plan to set\n")
@@ -269,7 +278,7 @@ func computeOutPlansHelper(
 				// Take out 2 tiles from inventory for pair group.
 				suit[i] = suit[i][2:]
 				computeOutPlansHelper(numRemainingTiles-2, inventory, outGroupsSoFar,
-					&newPairOutGroup, outPlansSoFar)
+					newPairOutGroup, outPlansSoFar)
 				// Restore previous state.
 				suit[i] = oldTiles
 			}
