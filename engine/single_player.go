@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	commonCommands           = ui.CommandTypes{ui.SortHand, ui.ShowDiscardedTiles}
+	commonCommands           = ui.CommandTypes{ui.SortHand, ui.ShowDiscardedTiles, ui.ShowMelded}
 	commandsAfterDrawingTile = withCommands(ui.DiscardTile, ui.ConcealedKong, ui.AdditionalKong, ui.Out)
 )
 
@@ -176,37 +176,42 @@ func (r *SinglePlayerRunner) startGameSequence() {
 
 func (r *SinglePlayerRunner) startPlayerRoundLoop() {
 	round := 1
+	playerMelded := false
 	for {
 		// TODO: Notify observer of round start
 		fmt.Println(separator)
 		fmt.Printf("Start of round %d\n", round)
 
-		// Draw phase
-		tile := r.drawFromDeckFront()
-		fmt.Printf("Drawn tile %s\n", tile)
-		// TODO: add observer for player drawing tile
-		if rules.IsEligibleForHand(tile.GetSuit()) {
-			// TODO: add observer for adding tile to hand
-			r.addTileToHand(tile)
-		} else {
-			r.addTileToBonusArea(tile)
-			r.replaceTileLoop()
+		if round == 1 || !playerMelded {
+			// Draw phase
+			tile := r.drawFromDeckFront()
+			fmt.Printf("Drawn tile %s\n", tile)
+			// TODO: add observer for player drawing tile
+			if rules.IsEligibleForHand(tile.GetSuit()) {
+				// TODO: add observer for adding tile to hand
+				r.addTileToHand(tile)
+			} else {
+				r.addTileToBonusArea(tile)
+				r.replaceTileLoop()
+			}
+
+			fmt.Printf("Hand: %s\n", r.player.GetHand())
+			// Player action phase
+			r.promptAndExecutePlayerAction(commandsAfterDrawingTile)
 		}
 
-		fmt.Printf("Hand: %s\n", r.player.GetHand())
-		// Player action phase
-		r.promptAndExecutePlayerAction(commandsAfterDrawingTile)
+		playerMelded = false
 
 		// Burn phase
 		for x := 0; x < r.numBurnsPerRound; x++ {
-			fmt.Printf("Burn %d of %d in round %d\n", x+1, r.numBurnsPerRound+1, round)
+			fmt.Printf("Burn %d of %d in round %d\n", x+1, r.numBurnsPerRound, round)
 			// Allow chow in the last burn
 			chowAllowed := x == r.numBurnsPerRound-1
 			melded := r.burnSingleTile(chowAllowed)
 			if melded {
-				fmt.Printf("Restarting burn phase due to meld\n")
-				x = 0
-				round++
+				fmt.Printf("Exiting burn phase due to meld\n")
+				playerMelded = true
+				break
 			}
 		}
 		round++
@@ -288,6 +293,9 @@ func (r *SinglePlayerRunner) executePlayerAction(cmd *ui.Command) bool {
 	case ui.ShowDiscardedTiles:
 		r.showDiscardedTiles()
 		return false
+	case ui.ShowMelded:
+		r.showMelded()
+		return false
 	case ui.DiscardTile:
 		return r.discardTile(cmd.GetTileIndexCommand().GetIndex())
 	case ui.Pong:
@@ -315,11 +323,12 @@ func (r *SinglePlayerRunner) executePlayerAction(cmd *ui.Command) bool {
 // TODO: score the out.
 func (r *SinglePlayerRunner) checkForOut() bool {
 	// TODO: also include r.currentBurnTile in the out.
-	counter := rules.NewHandTileCounter(rules.GetSuitsForGame(), r.player.GetHand(),
-		r.currentBurnTile)
-	plans := counter.ComputeOutPlans()
+	counter := rules.NewOutPlanCalculator(rules.GetSuitsForGame(), r.player.GetHand(),
+		r.currentBurnTile, r.player.GetMeldGroups())
+	plans := counter.Calculate()
 
 	if len(plans) > 0 {
+		fmt.Printf("Out plans: %s\n", plans)
 		panic(newGameOverError(true))
 	}
 	fmt.Println("Not an Out hand!")
@@ -335,8 +344,11 @@ func (r *SinglePlayerRunner) sortHand() {
 }
 
 func (r *SinglePlayerRunner) showDiscardedTiles() {
-	// TODO: Notify observer of show discarded tiles.
 	fmt.Printf("Discarded tiles: %s\n", r.player.GetDiscardedTiles())
+}
+
+func (r *SinglePlayerRunner) showMelded() {
+	fmt.Printf("Melded groups: %s\n", r.player.GetMeldGroups())
 }
 
 func (r *SinglePlayerRunner) addTileToHand(t *domain.Tile) {

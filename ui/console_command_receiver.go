@@ -8,6 +8,16 @@ import (
 	"strings"
 )
 
+// commandAliases contains a mapping of command shortcuts.
+var commandAliases = map[string]string {
+	"ak": AdditionalKong,
+	"c": Chow,
+	"ck": ConcealedKong,
+	"d": DiscardTile,
+	"k": Kong,
+	"p": Pong,
+}
+
 // ConsoleCommandReceiver receives command from the an input stream, such as the console.
 type ConsoleCommandReceiver struct {
 	scanner *bufio.Scanner
@@ -52,12 +62,19 @@ func (recver *ConsoleCommandReceiver) PromptForCommand(acceptedCommands CommandT
 	}
 }
 
+func resolveCommand(cmdStr string) string {
+	if str, found := commandAliases[cmdStr]; found {
+		return str
+	}
+	return cmdStr
+}
+
 func parseCommand(input string) (*Command, error) {
 	fields := strings.Fields(input)
 	if len(fields) < 1 {
 		return nil, fmt.Errorf("Fewer than 1 field in input")
 	}
-	cmdStr := fields[0]
+	cmdStr := resolveCommand(fields[0])
 	args := fields[1:]
 
 	switch cmdStr {
@@ -65,6 +82,8 @@ func parseCommand(input string) (*Command, error) {
 		return NewSortHandCommand(), nil
 	case ShowDiscardedTiles:
 		return NewShowDiscardedTilesCommand(), nil
+	case ShowMelded:
+		return NewShowMeldedCommand(), nil
 	case DiscardTile:
 		if len(args) < 1 {
 			return nil, fmt.Errorf("Not enough args for DiscardTile")

@@ -1,7 +1,6 @@
 package rules
 
 import (
-	"fmt"
 	"github.com/derekimcheng/mj/domain"
 )
 
@@ -24,48 +23,3 @@ var (
 )
 
 type tileInventory = map[*domain.Suit][][]*domain.Tile
-
-// HandTileCounter holds information on the count of each tile type + ordinal in a hand.
-type HandTileCounter struct {
-	// inventory maps a suit name and ordinal to a slice of tiles.
-	inventory        tileInventory
-	computedOutPlans *OutPlans
-}
-
-// NewHandTileCounter creates a new TileCounter with the given hand and the set of all possible
-// suits.
-func NewHandTileCounter(suits []*domain.Suit, h *domain.Hand, discardTile *domain.Tile) *HandTileCounter {
-	inventory := make(tileInventory)
-	for _, s := range suits {
-		inventory[s] = make([][]*domain.Tile, s.GetSize())
-	}
-	allTiles := h.GetTiles()
-	if discardTile != nil {
-		allTiles = append(allTiles, discardTile)
-	}
-	for _, t := range allTiles {
-		if !IsEligibleForHand(t.GetSuit()) {
-			panic(fmt.Errorf("Hand should not contain ineligible tiles when counting, got %s", t))
-		}
-		tiles := inventory[t.GetSuit()][t.GetOrdinal()]
-		inventory[t.GetSuit()][t.GetOrdinal()] = append(tiles, t)
-	}
-	return &HandTileCounter{inventory: inventory}
-}
-
-// ComputeOutPlans evalautes the current hand and generate possible Out plans for it.
-func (c *HandTileCounter) ComputeOutPlans() OutPlans {
-	if c.computedOutPlans != nil {
-		return *c.computedOutPlans
-	}
-
-	c.computedOutPlans = &OutPlans{}
-	numTiles := 0
-	for _, suit := range c.inventory {
-		for _, tiles := range suit {
-			numTiles += len(tiles)
-		}
-	}
-	computeOutPlans(numTiles, &c.inventory, c.computedOutPlans)
-	return *c.computedOutPlans
-}

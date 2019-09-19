@@ -30,7 +30,8 @@ func (plans OutPlans) String() string {
 // OutPlan consists of a strategy of declaring an Out using a combination of tile groups in the
 // hand and meld area.
 type OutPlan struct {
-	handGroups OutTileGroups
+	handGroups   OutTileGroups
+	meldedGroups OutTileGroups
 }
 
 // GetHandGroups ...
@@ -44,14 +45,22 @@ func (p OutPlan) String() string {
 	for _, handGroup := range p.handGroups {
 		handGroupStrs = append(handGroupStrs, handGroup.String())
 	}
-	return fmt.Sprintf("Hand: %s", strings.Join(handGroupStrs, ", "))
+	hand := fmt.Sprintf("Hand: %s", strings.Join(handGroupStrs, ", "))
+
+	meldedGroupStrs := []string{}
+	for _, meldedGroup := range p.meldedGroups {
+		meldedGroupStrs = append(meldedGroupStrs, meldedGroup.String())
+	}
+	melded := fmt.Sprintf("Melded: %s", strings.Join(meldedGroupStrs, ", "))
+
+	return hand + " " + melded
 }
 
 // NewOutPlan creates a new OutPlan with the given parameters. The input groups is not
 // copied, and will be modified by sorting.
-func NewOutPlan(handGroups OutTileGroups) OutPlan {
+func NewOutPlan(handGroups OutTileGroups, meldedGroups OutTileGroups) OutPlan {
 	sort.Sort(handGroups)
-	return OutPlan{handGroups: handGroups}
+	return OutPlan{handGroups: handGroups, meldedGroups: meldedGroups}
 }
 
 // OutTileGroupType represents a type of Out tile group
@@ -161,7 +170,7 @@ func (groups OutTileGroups) Less(i, j int) bool {
 	return groups[i].GetGroupType() < groups[j].GetGroupType()
 }
 
-type specialPlanMatcherFunc func(numRemainingTiles int, inventory *tileInventory) *OutPlan
+type specialPlanMatcherFunc func(numRemainingTiles int, inventory *tileInventory) OutTileGroups
 
 var (
 	specialPlanMatchers = []specialPlanMatcherFunc{
@@ -170,30 +179,79 @@ var (
 	}
 )
 
+// OutPlanCalculator calculators Out plans for a given state.
+type OutPlanCalculator struct {
+	handInventory    tileInventory
+	meldedGroups     OutTileGroups
+	computedOutPlans *OutPlans
+}
+
+// NewOutPlanCalculator creates a new OutPlanCalculator with the given state.
+// TODO: discardTile should be generalized into a source: self-drawn, kong, discard, replacement.
+func NewOutPlanCalculator(suits []*domain.Suit, h *domain.Hand, discardTile *domain.Tile, meldedGroups OutTileGroups) *OutPlanCalculator {
+	inventory := make(tileInventory)
+	for _, s := range suits {
+		inventory[s] = make([][]*domain.Tile, s.GetSize())
+	}
+	allTiles := h.GetTiles()
+	if discardTile != nil {
+		allTiles = append(allTiles, discardTile)
+	}
+	for _, t := range allTiles {
+		if !IsEligibleForHand(t.GetSuit()) {
+			panic(fmt.Errorf("Hand should not contain ineligible tiles when counting, got %s", t))
+		}
+		tiles := inventory[t.GetSuit()][t.GetOrdinal()]
+		inventory[t.GetSuit()][t.GetOrdinal()] = append(tiles, t)
+	}
+
+	meldedGroupsCopy := append(meldedGroups)
+	sort.Sort(meldedGroupsCopy)
+
+	return &OutPlanCalculator{handInventory: inventory, meldedGroups: meldedGroupsCopy, computedOutPlans: nil}
+}
+
+// Calculate generates possible Out plans for the given hand / melded groups.
+func (c *OutPlanCalculator) Calculate() OutPlans {
+	if c.computedOutPlans != nil {
+		return *c.computedOutPlans
+	}
+
+	c.computedOutPlans = &OutPlans{}
+	numTiles := 0
+	for _, suit := range c.handInventory {
+		for _, tiles := range suit {
+			numTiles += len(tiles)
+		}
+	}
+	c.computeOutPlans(numTiles, &c.handInventory, c.computedOutPlans)
+	return *c.computedOutPlans
+}
+
 // computeOutPlans is the entry point for generating out plans.
-func computeOutPlans(
+func (c *OutPlanCalculator) computeOutPlans(
 	numRemainingTiles int,
 	inventory *tileInventory,
 	outPlansSoFar *OutPlans) {
-	computeSpecialPlans(numRemainingTiles, inventory, outPlansSoFar)
-	computeOutPlansHelper(numRemainingTiles, inventory, nil, nil, outPlansSoFar)
+	c.computeSpecialPlans(numRemainingTiles, inventory, outPlansSoFar)
+	c.computeOutPlansHelper(numRemainingTiles, inventory, nil, nil, outPlansSoFar)
 }
 
-func computeSpecialPlans(
+func (c *OutPlanCalculator) computeSpecialPlans(
 	numRemainingTiles int,
 	inventory *tileInventory,
 	outPlansSoFar *OutPlans) {
 	for _, matcher := range specialPlanMatchers {
-		plan := matcher(numRemainingTiles, inventory)
-		if plan != nil {
-			*outPlansSoFar = append(*outPlansSoFar, *plan)
+		groups := matcher(numRemainingTiles, inventory)
+		if groups != nil {
+			*outPlansSoFar = append(*outPlansSoFar, c.generateNewOutPlan(groups))
 		}
 	}
 }
 
 // IsSevenPairs returns an OutPlan if the hand represents the "Seven Pairs" Out hand. Note that
 // four of a kind is considered as two pairs.
-func matchSevenPairs(numRemainingTiles int, inventory *tileInventory) *OutPlan {
+func matchSevenPairs(numRemainingTiles int, inventory *tileInventory) OutTileGroups {
 	if numRemainingTiles != 14 {
 		return nil
 	}
@@ -211,12 +269,12 @@ func matchSevenPairs(numRemainingTiles int, inventory *tileInventory) *OutPlan {
 	if numPairs != 7 {
 		return nil
 	}
-	plan := NewOutPlan(OutTileGroups{NewOutTileGroup(outTiles, OutTileGroupTypeSevenPairs)})
-	return &plan
+
+	return OutTileGroups{NewOutTileGroup(outTiles, OutTileGroupTypeSevenPairs)}
 }
 
 // matchThirteenOrphans returns an OutPlan if the hand represents the "Thirteen Orphans" Out hand.
-func matchThirteenOrphans(numRemainingTiles int, inventory *tileInventory) *OutPlan {
+func matchThirteenOrphans(numRemainingTiles int, inventory *tileInventory) OutTileGroups {
 	if numRemainingTiles != 14 {
 		return nil
 	}
@@ -237,11 +295,11 @@ func matchThirteenOrphans(numRemainingTiles int, inventory *tileInventory) *OutP
 		}
 		outTiles = append(outTiles, tiles...)
 	}
-	plan := NewOutPlan(OutTileGroups{NewOutTileGroup(outTiles, OutTileGroupTypeThirteenOrphans)})
-	return &plan
+
+	return OutTileGroups{NewOutTileGroup(outTiles, OutTileGroupTypeThirteenOrphans)}
 }
 
-func computeOutPlansHelper(
+func (c *OutPlanCalculator) computeOutPlansHelper(
 	numRemainingTiles int,
 	inventory *tileInventory,
 	outGroupsSoFar OutTileGroups,
@@ -253,7 +311,7 @@ func computeOutPlansHelper(
 			return
 		}
 		outGroupsSoFar := append(outGroupsSoFar, pairTileGroup)
-		outPlan := NewOutPlan(outGroupsSoFar)
+		outPlan := c.generateNewOutPlan(outGroupsSoFar)
 		*outPlansSoFar = append(*outPlansSoFar, outPlan)
 		glog.V(2).Infof("Base case: added valid plan to set\n")
 		return
@@ -277,7 +335,7 @@ func computeOutPlansHelper(
 				newPairOutGroup := NewOutTileGroup(outTiles, OutTileGroupTypePair)
 				// Take out 2 tiles from inventory for pair group.
 				suit[i] = suit[i][2:]
-				computeOutPlansHelper(numRemainingTiles-2, inventory, outGroupsSoFar,
+				c.computeOutPlansHelper(numRemainingTiles-2, inventory, outGroupsSoFar,
 					newPairOutGroup, outPlansSoFar)
 				// Restore previous state.
 				suit[i] = oldTiles
@@ -293,7 +351,7 @@ func computeOutPlansHelper(
 				outGroupsSoFar = append(outGroupsSoFar, newPongOutGroup)
 				// Take out 3 tiles from inventory for pong group.
 				suit[i] = suit[i][3:]
-				computeOutPlansHelper(numRemainingTiles-3, inventory, outGroupsSoFar,
+				c.computeOutPlansHelper(numRemainingTiles-3, inventory, outGroupsSoFar,
 					pairTileGroup, outPlansSoFar)
 				// Restore previous state.
 				suit[i] = oldTiles
@@ -322,7 +380,7 @@ func computeOutPlansHelper(
 					// a chow -> pair path.
 					if len(suit[i]) == 0 {
 						used = true
-						computeOutPlansHelper(numRemainingTiles-3*numChows, inventory,
+						c.computeOutPlansHelper(numRemainingTiles-3*numChows, inventory,
 							outGroupsSoFar, pairTileGroup, outPlansSoFar)
 					}
 					// Restore previous state.
@@ -343,4 +401,8 @@ func computeOutPlansHelper(
 			return
 		}
 	}
+}
+
+func (c *OutPlanCalculator) generateNewOutPlan(handGroups OutTileGroups) OutPlan {
+	return NewOutPlan(handGroups, c.meldedGroups)
 }

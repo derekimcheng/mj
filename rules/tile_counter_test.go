@@ -64,38 +64,36 @@ func Test_ComputeOutPlans_AllPongs(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	counter := NewHandTileCounter(GetSuitsForGame(), hand, nil)
-	plans := counter.ComputeOutPlans()
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), hand, nil, nil)
+	plans := calculator.Calculate()
 	// Note: the tiles created below have the same data layout as the tiles above, but they are
 	// distinct objects. The test assertions below rely on deep comparison for this test to pass.
-	expected := OutPlans{
-		NewOutPlan(OutTileGroups{
-			NewOutTileGroup(domain.Tiles{
-				domain.CreateTileForTest(t, dots, 0),
-				domain.CreateTileForTest(t, dots, 0),
-				domain.CreateTileForTest(t, dots, 0),
-			}, OutTileGroupTypePong),
-			NewOutTileGroup(domain.Tiles{
-				domain.CreateTileForTest(t, dots, 2),
-				domain.CreateTileForTest(t, dots, 2),
-				domain.CreateTileForTest(t, dots, 2),
-			}, OutTileGroupTypePong),
-			NewOutTileGroup(domain.Tiles{
-				domain.CreateTileForTest(t, dots, 4),
-				domain.CreateTileForTest(t, dots, 4),
-				domain.CreateTileForTest(t, dots, 4),
-			}, OutTileGroupTypePong),
-			NewOutTileGroup(domain.Tiles{
-				domain.CreateTileForTest(t, dots, 6),
-				domain.CreateTileForTest(t, dots, 6),
-				domain.CreateTileForTest(t, dots, 6),
-			}, OutTileGroupTypePong),
-			NewOutTileGroup(domain.Tiles{
-				domain.CreateTileForTest(t, dots, 8),
-				domain.CreateTileForTest(t, dots, 8),
-			}, OutTileGroupTypePair),
-		}),
-	}
+	handGroups := OutTileGroups{
+		NewOutTileGroup(domain.Tiles{
+			domain.CreateTileForTest(t, dots, 0),
+			domain.CreateTileForTest(t, dots, 0),
+			domain.CreateTileForTest(t, dots, 0),
+		}, OutTileGroupTypePong),
+		NewOutTileGroup(domain.Tiles{
+			domain.CreateTileForTest(t, dots, 2),
+			domain.CreateTileForTest(t, dots, 2),
+			domain.CreateTileForTest(t, dots, 2),
+		}, OutTileGroupTypePong),
+		NewOutTileGroup(domain.Tiles{
+			domain.CreateTileForTest(t, dots, 4),
+			domain.CreateTileForTest(t, dots, 4),
+			domain.CreateTileForTest(t, dots, 4),
+		}, OutTileGroupTypePong),
+		NewOutTileGroup(domain.Tiles{
+			domain.CreateTileForTest(t, dots, 6),
+			domain.CreateTileForTest(t, dots, 6),
+			domain.CreateTileForTest(t, dots, 6),
+		}, OutTileGroupTypePong),
+		NewOutTileGroup(domain.Tiles{
+			domain.CreateTileForTest(t, dots, 8),
+			domain.CreateTileForTest(t, dots, 8),
+		}, OutTileGroupTypePair)}
+	expected := OutPlans{NewOutPlan(handGroups, nil)}
 
 	assert.Equal(t, expected, plans)
 }
@@ -120,8 +118,8 @@ func Test_ComputeOutPlans_PongsOrChows(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	counter := NewHandTileCounter(GetSuitsForGame(), hand, nil)
-	plans := counter.ComputeOutPlans()
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), hand, nil, nil)
+	plans := calculator.Calculate()
 
 	expected := OutPlans{
 		// Plan 1
@@ -150,7 +148,7 @@ func Test_ComputeOutPlans_PongsOrChows(t *testing.T) {
 				domain.CreateTileForTest(t, dots, 3),
 				domain.CreateTileForTest(t, dots, 4),
 			}, OutTileGroupTypeChow),
-		}),
+		}, /*meldedGroups*/ nil),
 		// Plan 2
 		NewOutPlan(OutTileGroups{
 			NewOutTileGroup(domain.Tiles{
@@ -177,7 +175,7 @@ func Test_ComputeOutPlans_PongsOrChows(t *testing.T) {
 				domain.CreateTileForTest(t, dots, 4),
 				domain.CreateTileForTest(t, dots, 4),
 			}, OutTileGroupTypePair),
-		}),
+		}, /*meldedGroups*/ nil),
 		// Plan 3
 		NewOutPlan(OutTileGroups{
 			NewOutTileGroup(domain.Tiles{
@@ -204,7 +202,7 @@ func Test_ComputeOutPlans_PongsOrChows(t *testing.T) {
 				domain.CreateTileForTest(t, dots, 4),
 				domain.CreateTileForTest(t, dots, 4),
 			}, OutTileGroupTypePair),
-		}),
+		}, /*meldedGroups*/ nil),
 		// Plan 4
 		NewOutPlan(OutTileGroups{
 			NewOutTileGroup(domain.Tiles{
@@ -231,7 +229,7 @@ func Test_ComputeOutPlans_PongsOrChows(t *testing.T) {
 				domain.CreateTileForTest(t, dots, 4),
 				domain.CreateTileForTest(t, dots, 4),
 			}, OutTileGroupTypePair),
-		}),
+		}, /*meldedGroups*/ nil),
 	}
 
 	assert.Equal(t, expected, plans)
@@ -262,8 +260,8 @@ func Test_ComputeOutPlans_NineGates(t *testing.T) {
 		outTile := domain.CreateTileForTest(t, dots, x)
 		hand.AddTile(outTile)
 
-		counter := NewHandTileCounter(GetSuitsForGame(), hand, nil)
-		plans := counter.ComputeOutPlans()
+		calculator := NewOutPlanCalculator(GetSuitsForGame(), hand, nil, nil)
+		plans := calculator.Calculate()
 		assert.NotEmpty(t, plans, "Nine gates failed with tile %s", outTile)
 	}
 }
@@ -288,8 +286,8 @@ func Test_ComputeOutPlans_ThreeQuadruples(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	counter := NewHandTileCounter(GetSuitsForGame(), hand, nil)
-	plans := counter.ComputeOutPlans()
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), hand, nil, nil)
+	plans := calculator.Calculate()
 
 	expected := OutPlans{
 		// Plan 1
@@ -310,7 +308,7 @@ func Test_ComputeOutPlans_ThreeQuadruples(t *testing.T) {
 				domain.CreateTileForTest(t, dots, 3),
 				domain.CreateTileForTest(t, dots, 3),
 			}, OutTileGroupTypeSevenPairs),
-		}),
+		}, /*meldedGroups*/ nil),
 		// Plan 2
 		NewOutPlan(OutTileGroups{
 			NewOutTileGroup(domain.Tiles{
@@ -337,7 +335,7 @@ func Test_ComputeOutPlans_ThreeQuadruples(t *testing.T) {
 				domain.CreateTileForTest(t, dots, 2),
 				domain.CreateTileForTest(t, dots, 3),
 			}, OutTileGroupTypeChow),
-		}),
+		}, /*meldedGroups*/ nil),
 		// Plan 3
 		NewOutPlan(OutTileGroups{
 			NewOutTileGroup(domain.Tiles{
@@ -364,7 +362,7 @@ func Test_ComputeOutPlans_ThreeQuadruples(t *testing.T) {
 				domain.CreateTileForTest(t, dots, 3),
 				domain.CreateTileForTest(t, dots, 3),
 			}, OutTileGroupTypePair),
-		}),
+		}, /*meldedGroups*/ nil),
 		// Plan 4
 		NewOutPlan(OutTileGroups{
 			NewOutTileGroup(domain.Tiles{
@@ -391,7 +389,7 @@ func Test_ComputeOutPlans_ThreeQuadruples(t *testing.T) {
 				domain.CreateTileForTest(t, dots, 3),
 				domain.CreateTileForTest(t, dots, 3),
 			}, OutTileGroupTypePair),
-		}),
+		}, /*meldedGroups*/ nil),
 	}
 
 	assert.Equal(t, expected, plans)
@@ -408,8 +406,8 @@ func Test_ComputeOutPlans_PairAndAChow(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	counter := NewHandTileCounter(GetSuitsForGame(), hand, nil)
-	plans := counter.ComputeOutPlans()
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), hand, nil, nil)
+	plans := calculator.Calculate()
 
 	expected := OutPlans{
 		NewOutPlan(OutTileGroups{
@@ -422,7 +420,7 @@ func Test_ComputeOutPlans_PairAndAChow(t *testing.T) {
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
 			}, OutTileGroupTypeChow),
-		}),
+		}, /*meldedGroups*/ nil),
 	}
 
 	assert.Equal(t, expected, plans)

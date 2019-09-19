@@ -12,6 +12,8 @@ const (
 	SortHand CommandType = "sort"
 	// ShowDiscardedTiles shows the tiles that have been discarded so far.
 	ShowDiscardedTiles CommandType = "discarded"
+	// ShowMelded shows the melded area.
+	ShowMelded CommandType = "melded"
 	// DiscardTile discards a tile at the given index. Corresponds to DiscardTileCommand.
 	DiscardTile CommandType = "discard"
 	// Pong creates a meld from a pong tile group. Only available if the tile completing the
@@ -104,6 +106,11 @@ func NewSortHandCommand() *Command {
 // NewShowDiscardedTilesCommand returns a new ShowDiscardedTiles command.
 func NewShowDiscardedTilesCommand() *Command {
 	return &Command{commandType: ShowDiscardedTiles}
+}
+
+// NewShowMeldedCommand returns a new NewShowMelded command.
+func NewShowMeldedCommand() *Command {
+	return &Command{commandType: ShowMelded}
 }
 
 // NewDiscardTileCommand returns a new DiscardTile command with the given index.
