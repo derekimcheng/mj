@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/derekimcheng/mj/domain"
 	"github.com/derekimcheng/mj/engine"
 	"github.com/derekimcheng/mj/flags"
 	"github.com/derekimcheng/mj/rules"
@@ -41,11 +42,7 @@ func printUsage() {
 // createAndDumpDeck creates a game deck and empties it, logging each tile in the order they are
 // drawn.
 func createAndDumpDeck() {
-	deck, err := rules.NewDeckForGame(*flags.RuleNameFlag)
-	if err != nil {
-		panic(errors.Wrapf(err, "failed to create deck"))
-	}
-	deck.Shuffle()
+	deck := createDeck()
 	for !deck.IsEmpty() {
 		tile, err := deck.PopFront()
 		if err != nil {
@@ -57,8 +54,20 @@ func createAndDumpDeck() {
 
 func simulateSingleHand() {
 	runner := engine.NewSinglePlayerRunner(ui.NewConsoleCommandReceiver(os.Stdin))
-	err := runner.Start()
+	err := runner.Start(createDeck())
 	if err != nil {
 		fmt.Printf("Encountered error while running single player game: %s\n", err)
 	}
+}
+
+func createDeck() domain.Deck {
+	deck, err := rules.NewDeckForGame(*flags.RuleNameFlag)
+	if err != nil {
+		panic(errors.Wrapf(err, "failed to initialize deck"))
+	}
+	if deck.IsEmpty() {
+		panic(errors.New("Deck is empty"))
+	}
+	deck.Shuffle()
+	return deck
 }

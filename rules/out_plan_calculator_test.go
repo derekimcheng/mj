@@ -64,7 +64,8 @@ func Test_ComputeOutPlans_AllPongs(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	calculator := NewOutPlanCalculator(GetSuitsForGame(), hand, nil, nil)
+	player := NewPlayerGameState(hand)
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, nil)
 	plans := calculator.Calculate()
 	// Note: the tiles created below have the same data layout as the tiles above, but they are
 	// distinct objects. The test assertions below rely on deep comparison for this test to pass.
@@ -118,7 +119,8 @@ func Test_ComputeOutPlans_PongsOrChows(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	calculator := NewOutPlanCalculator(GetSuitsForGame(), hand, nil, nil)
+	player := NewPlayerGameState(hand)
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, nil)
 	plans := calculator.Calculate()
 
 	expected := OutPlans{
@@ -260,7 +262,8 @@ func Test_ComputeOutPlans_NineGates(t *testing.T) {
 		outTile := domain.CreateTileForTest(t, dots, x)
 		hand.AddTile(outTile)
 
-		calculator := NewOutPlanCalculator(GetSuitsForGame(), hand, nil, nil)
+		player := NewPlayerGameState(hand)
+		calculator := NewOutPlanCalculator(GetSuitsForGame(), player, nil)
 		plans := calculator.Calculate()
 		assert.NotEmpty(t, plans, "Nine gates failed with tile %s", outTile)
 	}
@@ -286,7 +289,8 @@ func Test_ComputeOutPlans_ThreeQuadruples(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	calculator := NewOutPlanCalculator(GetSuitsForGame(), hand, nil, nil)
+	player := NewPlayerGameState(hand)
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, nil)
 	plans := calculator.Calculate()
 
 	expected := OutPlans{
@@ -406,7 +410,8 @@ func Test_ComputeOutPlans_PairAndAChow(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	calculator := NewOutPlanCalculator(GetSuitsForGame(), hand, nil, nil)
+	player := NewPlayerGameState(hand)
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, nil)
 	plans := calculator.Calculate()
 
 	expected := OutPlans{

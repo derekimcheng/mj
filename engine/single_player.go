@@ -94,15 +94,18 @@ func NewSinglePlayerRunner(receiver ui.CommandReceiver) *SinglePlayerRunner {
 
 // Start starts the game sequence. Returns an error if the game is already started (or ended), or
 // if the game is unable to start. This function returns when the game ends.
-func (r *SinglePlayerRunner) Start() error {
+func (r *SinglePlayerRunner) Start(deck domain.Deck) error {
 	if r.started {
-		return fmt.Errorf("Already started")
+		return errors.New("Already started")
+	}
+	if deck.IsEmpty() {
+		return errors.New("Deck is empty")
 	}
 
 	glog.V(2).Infof("Starting single player game")
 	r.started = true
 
-	r.initializeDeck()
+	r.deck = deck
 	err := r.initializePlayer()
 	if err != nil {
 		return errors.Wrapf(err, "unable to start game")
@@ -111,16 +114,6 @@ func (r *SinglePlayerRunner) Start() error {
 	// From here on, the game logic could throw exception to signal that the game is over.
 	r.startGameSequence()
 	return nil
-}
-
-func (r *SinglePlayerRunner) initializeDeck() {
-	glog.V(2).Infof("Initializing deck\n")
-	deck, err := rules.NewDeckForGame(*flags.RuleNameFlag)
-	if err != nil {
-		panic(errors.Wrapf(err, "failed to initialize deck"))
-	}
-	r.deck = deck
-	r.deck.Shuffle()
 }
 
 func (r *SinglePlayerRunner) initializePlayer() error {
@@ -322,13 +315,12 @@ func (r *SinglePlayerRunner) executePlayerAction(cmd *ui.Command) bool {
 // panic if the hand is an out hand, or return false if it is not an out hand.
 // TODO: score the out.
 func (r *SinglePlayerRunner) checkForOut() bool {
-	// TODO: also include r.currentBurnTile in the out.
-	counter := rules.NewOutPlanCalculator(rules.GetSuitsForGame(), r.player.GetHand(),
-		r.currentBurnTile, r.player.GetMeldGroups())
+	counter := rules.NewOutPlanCalculator(rules.GetSuitsForGame(), r.player, r.currentBurnTile)
 	plans := counter.Calculate()
 
 	if len(plans) > 0 {
 		fmt.Printf("Out plans: %s\n", plans)
+		// TODO: Report detailed score plans via flag.
 		panic(newGameOverError(true))
 	}
 	fmt.Println("Not an Out hand!")
