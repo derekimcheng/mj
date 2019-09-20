@@ -24,17 +24,17 @@ import (
 // }
 
 // func areOutPlansEquivalent(plan1 OutPlan, plan2 OutPlan) bool {
-// 	return areOutTileGroupSlicesEquivalent(plan1.GetHandGroups(), plan2.GetHandGroups())
+// 	return areTileGroupSlicesEquivalent(plan1.GetHandGroups(), plan2.GetHandGroups())
 // }
 
-// func areOutTileGroupSlicesEquivalent(groups1 []OutTileGroup, groups2 []OutTileGroup) bool {
+// func areTileGroupSlicesEquivalent(groups1 []TileGroup, groups2 []TileGroup) bool {
 // 	if len(groups1) != len(groups2) {
 // 		return false
 // 	}
 
 // 	for _, group1 := range groups1 {
 // 		for i, group2 := range groups2 {
-// 			if areOutTileGroupsEquivalent(group1, group2) {
+// 			if areTileGroupsEquivalent(group1, group2) {
 // 				groups2 = append(groups2[:i], groups2[i+1:]...)
 // 				break
 // 			}
@@ -65,35 +65,35 @@ func Test_ComputeOutPlans_AllPongs(t *testing.T) {
 	hand.SetTiles(tiles)
 
 	player := NewPlayerGameState(hand)
-	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, nil)
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, NewOutTileSource(hand.GetTiles()[0], OutTileSourceTypeSelfDrawn))
 	plans := calculator.Calculate()
 	// Note: the tiles created below have the same data layout as the tiles above, but they are
 	// distinct objects. The test assertions below rely on deep comparison for this test to pass.
-	handGroups := OutTileGroups{
-		NewOutTileGroup(domain.Tiles{
+	handGroups := TileGroups{
+		NewTileGroup(domain.Tiles{
 			domain.CreateTileForTest(t, dots, 0),
 			domain.CreateTileForTest(t, dots, 0),
 			domain.CreateTileForTest(t, dots, 0),
-		}, OutTileGroupTypePong),
-		NewOutTileGroup(domain.Tiles{
+		}, TileGroupTypePong),
+		NewTileGroup(domain.Tiles{
 			domain.CreateTileForTest(t, dots, 2),
 			domain.CreateTileForTest(t, dots, 2),
 			domain.CreateTileForTest(t, dots, 2),
-		}, OutTileGroupTypePong),
-		NewOutTileGroup(domain.Tiles{
+		}, TileGroupTypePong),
+		NewTileGroup(domain.Tiles{
 			domain.CreateTileForTest(t, dots, 4),
 			domain.CreateTileForTest(t, dots, 4),
 			domain.CreateTileForTest(t, dots, 4),
-		}, OutTileGroupTypePong),
-		NewOutTileGroup(domain.Tiles{
+		}, TileGroupTypePong),
+		NewTileGroup(domain.Tiles{
 			domain.CreateTileForTest(t, dots, 6),
 			domain.CreateTileForTest(t, dots, 6),
 			domain.CreateTileForTest(t, dots, 6),
-		}, OutTileGroupTypePong),
-		NewOutTileGroup(domain.Tiles{
+		}, TileGroupTypePong),
+		NewTileGroup(domain.Tiles{
 			domain.CreateTileForTest(t, dots, 8),
 			domain.CreateTileForTest(t, dots, 8),
-		}, OutTileGroupTypePair)}
+		}, TileGroupTypePair)}
 	expected := OutPlans{NewOutPlan(handGroups, nil)}
 
 	assert.Equal(t, expected, plans)
@@ -120,117 +120,117 @@ func Test_ComputeOutPlans_PongsOrChows(t *testing.T) {
 	hand.SetTiles(tiles)
 
 	player := NewPlayerGameState(hand)
-	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, nil)
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, NewOutTileSource(hand.GetTiles()[0], OutTileSourceTypeSelfDrawn))
 	plans := calculator.Calculate()
 
 	expected := OutPlans{
 		// Plan 1
-		NewOutPlan(OutTileGroups{
-			NewOutTileGroup(domain.Tiles{
+		NewOutPlan(TileGroups{
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 0),
-			}, OutTileGroupTypePong),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypePong),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 1),
-			}, OutTileGroupTypePair),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypePair),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
 				domain.CreateTileForTest(t, dots, 3),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
-				domain.CreateTileForTest(t, dots, 2),
-				domain.CreateTileForTest(t, dots, 3),
-				domain.CreateTileForTest(t, dots, 4),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 2),
 				domain.CreateTileForTest(t, dots, 3),
 				domain.CreateTileForTest(t, dots, 4),
-			}, OutTileGroupTypeChow),
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
+				domain.CreateTileForTest(t, dots, 2),
+				domain.CreateTileForTest(t, dots, 3),
+				domain.CreateTileForTest(t, dots, 4),
+			}, TileGroupTypeChow),
 		}, /*meldedGroups*/ nil),
 		// Plan 2
-		NewOutPlan(OutTileGroups{
-			NewOutTileGroup(domain.Tiles{
+		NewOutPlan(TileGroups{
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 0),
-			}, OutTileGroupTypePong),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypePong),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 1),
-			}, OutTileGroupTypePong),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypePong),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 2),
 				domain.CreateTileForTest(t, dots, 2),
 				domain.CreateTileForTest(t, dots, 2),
-			}, OutTileGroupTypePong),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypePong),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 3),
 				domain.CreateTileForTest(t, dots, 3),
 				domain.CreateTileForTest(t, dots, 3),
-			}, OutTileGroupTypePong),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypePong),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 4),
 				domain.CreateTileForTest(t, dots, 4),
-			}, OutTileGroupTypePair),
+			}, TileGroupTypePair),
 		}, /*meldedGroups*/ nil),
 		// Plan 3
-		NewOutPlan(OutTileGroups{
-			NewOutTileGroup(domain.Tiles{
+		NewOutPlan(TileGroups{
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 0),
-			}, OutTileGroupTypePong),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypePong),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
 				domain.CreateTileForTest(t, dots, 3),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
 				domain.CreateTileForTest(t, dots, 3),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
 				domain.CreateTileForTest(t, dots, 3),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 4),
 				domain.CreateTileForTest(t, dots, 4),
-			}, OutTileGroupTypePair),
+			}, TileGroupTypePair),
 		}, /*meldedGroups*/ nil),
 		// Plan 4
-		NewOutPlan(OutTileGroups{
-			NewOutTileGroup(domain.Tiles{
+		NewOutPlan(TileGroups{
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 3),
 				domain.CreateTileForTest(t, dots, 3),
 				domain.CreateTileForTest(t, dots, 3),
-			}, OutTileGroupTypePong),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypePong),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 4),
 				domain.CreateTileForTest(t, dots, 4),
-			}, OutTileGroupTypePair),
+			}, TileGroupTypePair),
 		}, /*meldedGroups*/ nil),
 	}
 
@@ -263,7 +263,7 @@ func Test_ComputeOutPlans_NineGates(t *testing.T) {
 		hand.AddTile(outTile)
 
 		player := NewPlayerGameState(hand)
-		calculator := NewOutPlanCalculator(GetSuitsForGame(), player, nil)
+		calculator := NewOutPlanCalculator(GetSuitsForGame(), player, NewOutTileSource(hand.GetTiles()[0], OutTileSourceTypeSelfDrawn))
 		plans := calculator.Calculate()
 		assert.NotEmpty(t, plans, "Nine gates failed with tile %s", outTile)
 	}
@@ -290,13 +290,13 @@ func Test_ComputeOutPlans_ThreeQuadruples(t *testing.T) {
 	hand.SetTiles(tiles)
 
 	player := NewPlayerGameState(hand)
-	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, nil)
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, NewOutTileSource(hand.GetTiles()[0], OutTileSourceTypeSelfDrawn))
 	plans := calculator.Calculate()
 
 	expected := OutPlans{
 		// Plan 1
-		NewOutPlan(OutTileGroups{
-			NewOutTileGroup(domain.Tiles{
+		NewOutPlan(TileGroups{
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 0),
@@ -311,88 +311,88 @@ func Test_ComputeOutPlans_ThreeQuadruples(t *testing.T) {
 				domain.CreateTileForTest(t, dots, 2),
 				domain.CreateTileForTest(t, dots, 3),
 				domain.CreateTileForTest(t, dots, 3),
-			}, OutTileGroupTypeSevenPairs),
+			}, TileGroupTypeSevenPairs),
 		}, /*meldedGroups*/ nil),
 		// Plan 2
-		NewOutPlan(OutTileGroups{
-			NewOutTileGroup(domain.Tiles{
+		NewOutPlan(TileGroups{
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 0),
-			}, OutTileGroupTypePair),
-			NewOutTileGroup(domain.Tiles{
-				domain.CreateTileForTest(t, dots, 0),
-				domain.CreateTileForTest(t, dots, 1),
-				domain.CreateTileForTest(t, dots, 2),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypePair),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
+				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
-				domain.CreateTileForTest(t, dots, 3),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
 				domain.CreateTileForTest(t, dots, 3),
-			}, OutTileGroupTypeChow),
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
+				domain.CreateTileForTest(t, dots, 1),
+				domain.CreateTileForTest(t, dots, 2),
+				domain.CreateTileForTest(t, dots, 3),
+			}, TileGroupTypeChow),
 		}, /*meldedGroups*/ nil),
 		// Plan 3
-		NewOutPlan(OutTileGroups{
-			NewOutTileGroup(domain.Tiles{
+		NewOutPlan(TileGroups{
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 0),
-			}, OutTileGroupTypePong),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypePong),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 1),
-			}, OutTileGroupTypePong),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypePong),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 2),
 				domain.CreateTileForTest(t, dots, 2),
 				domain.CreateTileForTest(t, dots, 2),
-			}, OutTileGroupTypePong),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypePong),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 3),
 				domain.CreateTileForTest(t, dots, 3),
-			}, OutTileGroupTypePair),
+			}, TileGroupTypePair),
 		}, /*meldedGroups*/ nil),
 		// Plan 4
-		NewOutPlan(OutTileGroups{
-			NewOutTileGroup(domain.Tiles{
+		NewOutPlan(TileGroups{
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
-			}, OutTileGroupTypeChow),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypeChow),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 3),
 				domain.CreateTileForTest(t, dots, 3),
-			}, OutTileGroupTypePair),
+			}, TileGroupTypePair),
 		}, /*meldedGroups*/ nil),
 	}
 
@@ -411,20 +411,20 @@ func Test_ComputeOutPlans_PairAndAChow(t *testing.T) {
 	hand.SetTiles(tiles)
 
 	player := NewPlayerGameState(hand)
-	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, nil)
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, NewOutTileSource(hand.GetTiles()[0], OutTileSourceTypeSelfDrawn))
 	plans := calculator.Calculate()
 
 	expected := OutPlans{
-		NewOutPlan(OutTileGroups{
-			NewOutTileGroup(domain.Tiles{
+		NewOutPlan(TileGroups{
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 0),
-			}, OutTileGroupTypePair),
-			NewOutTileGroup(domain.Tiles{
+			}, TileGroupTypePair),
+			NewTileGroup(domain.Tiles{
 				domain.CreateTileForTest(t, dots, 0),
 				domain.CreateTileForTest(t, dots, 1),
 				domain.CreateTileForTest(t, dots, 2),
-			}, OutTileGroupTypeChow),
+			}, TileGroupTypeChow),
 		}, /*meldedGroups*/ nil),
 	}
 

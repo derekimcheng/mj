@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/derekimcheng/mj/rules/zj"
 	"fmt"
 	"github.com/derekimcheng/mj/domain"
 	"github.com/derekimcheng/mj/flags"
@@ -178,6 +179,7 @@ func (r *SinglePlayerRunner) startPlayerRoundLoop() {
 		if round == 1 || !playerMelded {
 			// Draw phase
 			tile := r.drawFromDeckFront()
+			source := rules.OutTileSourceTypeSelfDrawn
 			fmt.Printf("Drawn tile %s\n", tile)
 			// TODO: add observer for player drawing tile
 			if rules.IsEligibleForHand(tile.GetSuit()) {
@@ -185,12 +187,14 @@ func (r *SinglePlayerRunner) startPlayerRoundLoop() {
 				r.addTileToHand(tile)
 			} else {
 				r.addTileToBonusArea(tile)
-				r.replaceTileLoop()
+				tile = r.replaceTileLoop()
+				source = rules.OutTileSourceTypeSelfDrawnReplacement
 			}
 
 			fmt.Printf("Hand: %s\n", r.player.GetHand())
 			// Player action phase
-			r.promptAndExecutePlayerAction(commandsAfterDrawingTile)
+			r.promptAndExecutePlayerAction(commandsAfterDrawingTile,
+				rules.NewOutTileSource(tile, source))
 		}
 
 		playerMelded = false
@@ -234,10 +238,12 @@ func (r *SinglePlayerRunner) burnSingleTile(chowAllowed bool) bool {
 	var cmdType ui.CommandType
 	if chowAllowed {
 		cmdType = r.promptAndExecutePlayerAction(
-			withCommands(ui.Pong, ui.Kong, ui.Chow, ui.Pass, ui.Out))
+			withCommands(ui.Pong, ui.Kong, ui.Chow, ui.Pass, ui.Out),
+			rules.NewOutTileSource(tile, rules.OutTileSourceTypeDiscard))
 	} else {
 		cmdType = r.promptAndExecutePlayerAction(
-			withCommands(ui.Pong, ui.Kong, ui.Pass, ui.Out))
+			withCommands(ui.Pong, ui.Kong, ui.Pass, ui.Out),
+			rules.NewOutTileSource(tile, rules.OutTileSourceTypeDiscard))
 	}
 
 	melded := cmdType != ui.Pass
@@ -248,14 +254,14 @@ func (r *SinglePlayerRunner) burnSingleTile(chowAllowed bool) bool {
 	return melded
 }
 
-func (r *SinglePlayerRunner) replaceTileLoop() {
+func (r *SinglePlayerRunner) replaceTileLoop() *domain.Tile {
 	for round := 1; ; /* no-op */ round++ {
 		fmt.Printf("Drawing a replacement tile from the back of deck (round %d)\n", round)
 		tile := r.drawFromDeckBack()
 		if rules.IsEligibleForHand(tile.GetSuit()) {
 			fmt.Printf("Adding replacement tile to hand: %s\n", tile)
 			r.addTileToHand(tile)
-			return
+			return tile
 		}
 		// Else tile is a bonus tile, add it and repeat.
 		r.addTileToBonusArea(tile)
@@ -263,7 +269,7 @@ func (r *SinglePlayerRunner) replaceTileLoop() {
 }
 
 func (r *SinglePlayerRunner) promptAndExecutePlayerAction(
-	acceptedCommands ui.CommandTypes) ui.CommandType {
+	acceptedCommands ui.CommandTypes, outTileSource *rules.OutTileSource) ui.CommandType {
 	for {
 		cmd, err := r.receiver.PromptForCommand(acceptedCommands)
 		if err != nil {
@@ -271,14 +277,15 @@ func (r *SinglePlayerRunner) promptAndExecutePlayerAction(
 			panic(newGameOverError(false))
 		}
 
-		proceed := r.executePlayerAction(cmd)
+		proceed := r.executePlayerAction(cmd, outTileSource)
 		if proceed {
 			return cmd.GetCommandType()
 		}
 	}
 }
 
-func (r *SinglePlayerRunner) executePlayerAction(cmd *ui.Command) bool {
+func (r *SinglePlayerRunner) executePlayerAction(cmd *ui.Command,
+	outTileSource *rules.OutTileSource) bool {
 	switch cmd.GetCommandType() {
 	case ui.SortHand:
 		r.sortHand()
@@ -305,7 +312,7 @@ func (r *SinglePlayerRunner) executePlayerAction(cmd *ui.Command) bool {
 	case ui.Pass:
 		return true
 	case ui.Out:
-		return r.checkForOut()
+		return r.checkForOut(outTileSource)
 	}
 	fmt.Printf("Unhandled command: %s\n", cmd.GetCommandType())
 	return false
@@ -313,14 +320,18 @@ func (r *SinglePlayerRunner) executePlayerAction(cmd *ui.Command) bool {
 
 // checkForOut checks whether the current player state represents an Out. This function will
 // panic if the hand is an out hand, or return false if it is not an out hand.
-// TODO: score the out.
-func (r *SinglePlayerRunner) checkForOut() bool {
-	counter := rules.NewOutPlanCalculator(rules.GetSuitsForGame(), r.player, r.currentBurnTile)
+func (r *SinglePlayerRunner) checkForOut(outTileSource *rules.OutTileSource) bool {
+	counter := rules.NewOutPlanCalculator(rules.GetSuitsForGame(), r.player, outTileSource)
 	plans := counter.Calculate()
 
 	if len(plans) > 0 {
-		fmt.Printf("Out plans: %s\n", plans)
-		// TODO: Report detailed score plans via flag.
+		fmt.Printf("Out: %s. Plans: %s\n", outTileSource, plans)
+		if *flags.ReportScoringFlag {
+			scorer := zj.NewOutPlansScorer()
+			scoredPlans := scorer.ScoreOutPlans(plans, outTileSource)
+			fmt.Printf("Detailed scoring:\n")
+			fmt.Printf("%s\n", scoredPlans)
+		}
 		panic(newGameOverError(true))
 	}
 	fmt.Println("Not an Out hand!")
@@ -387,7 +398,7 @@ func (r *SinglePlayerRunner) declarePong() bool {
 	// TODO: notify observer of meld area / hand change
 	fmt.Printf("Declared pong %s\n", r.currentBurnTile)
 	r.currentBurnTile = nil
-	r.promptAndExecutePlayerAction(withCommands(ui.DiscardTile))
+	r.promptAndExecutePlayerAction(withCommands(ui.DiscardTile), nil)
 	return removed
 }
 
@@ -408,8 +419,9 @@ func (r *SinglePlayerRunner) declareKong() bool {
 	r.currentBurnTile = nil
 
 	// After drawing the replacement tile, the player may go out, or they must discard a tile.
-	r.replaceTileLoop()
-	r.promptAndExecutePlayerAction(commandsAfterDrawingTile)
+	replacementTile := r.replaceTileLoop()
+	r.promptAndExecutePlayerAction(commandsAfterDrawingTile,
+		rules.NewOutTileSource(replacementTile, rules.OutTileSourceTypeSelfDrawnReplacement))
 	return removed
 }
 
@@ -426,8 +438,9 @@ func (r *SinglePlayerRunner) declareConcealedKong(index int) bool {
 	// After drawing the replacement tile, the player may go out, or have another concealed kong.
 	// Note this may result in a recursion.
 	// TODO: don't do recursion?
-	r.replaceTileLoop()
-	r.promptAndExecutePlayerAction(commandsAfterDrawingTile)
+	replacementTile := r.replaceTileLoop()
+	r.promptAndExecutePlayerAction(commandsAfterDrawingTile,
+		rules.NewOutTileSource(replacementTile, rules.OutTileSourceTypeSelfDrawnReplacement))
 	return removed
 }
 
@@ -444,8 +457,9 @@ func (r *SinglePlayerRunner) declareAdditionalKong(index int) bool {
 	// After drawing the replacement tile, the player may go out, or have another concealed kong.
 	// Note this may result in a recursion.
 	// TODO: don't do recursion?
-	r.replaceTileLoop()
-	r.promptAndExecutePlayerAction(commandsAfterDrawingTile)
+	replacementTile := r.replaceTileLoop()
+	r.promptAndExecutePlayerAction(commandsAfterDrawingTile,
+		rules.NewOutTileSource(replacementTile, rules.OutTileSourceTypeSelfDrawnReplacement))
 	return removed
 }
 
@@ -464,7 +478,7 @@ func (r *SinglePlayerRunner) declareChow(index1, index2 int) bool {
 	fmt.Printf("Declared chow %s\n", tiles)
 	// TODO: notify observer of meld area / hand change
 	r.currentBurnTile = nil
-	r.promptAndExecutePlayerAction(withCommands(ui.DiscardTile))
+	r.promptAndExecutePlayerAction(withCommands(ui.DiscardTile), nil)
 	return true
 }
 

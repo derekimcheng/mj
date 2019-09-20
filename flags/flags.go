@@ -36,3 +36,6 @@ const (
 
 // NumBurnsFlag specifies number of tiles to burn in each round in single player mode.
 var NumBurnsFlag = flag.Int("mj.numBurns", 0, "Number of tiles to burn in each round")
+
+// ReportScoringFlag specifies whether to turn on detailed scoring report after an Out.
+var ReportScoringFlag = flag.Bool("mj.reportScoring", true, "Report detailed scoring after an Out")

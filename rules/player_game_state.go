@@ -13,7 +13,7 @@ type PlayerGameState struct {
 	hand           *domain.Hand
 	bonusTiles     domain.Tiles
 	discardedTiles domain.Tiles
-	meldGroups     OutTileGroups
+	meldGroups     TileGroups
 }
 
 // NewPlayerGameState creates a blank PlayerGameState object.
@@ -98,7 +98,7 @@ func (s *PlayerGameState) DeclarePong(t *domain.Tile) bool {
 	pongTiles = append(pongTiles, t)
 
 	// Add the tiles to a meld group.
-	s.meldGroups = append(s.meldGroups, NewOutTileGroup(pongTiles, OutTileGroupTypePong))
+	s.meldGroups = append(s.meldGroups, NewTileGroup(pongTiles, TileGroupTypePong))
 	return true
 }
 
@@ -120,7 +120,7 @@ func (s *PlayerGameState) DeclareKong(t *domain.Tile) bool {
 	kongTiles = append(kongTiles, t)
 
 	// Add the tiles to a meld group.
-	s.meldGroups = append(s.meldGroups, NewOutTileGroup(kongTiles, OutTileGroupTypeKong))
+	s.meldGroups = append(s.meldGroups, NewTileGroup(kongTiles, TileGroupTypeKong))
 	return true
 }
 
@@ -148,7 +148,7 @@ func (s *PlayerGameState) DeclareConcealedKong(index int) (*domain.Tile, bool) {
 	kongTiles := s.removeSimilarTilesFromHand(theTile, 4)
 
 	// Add the tiles to a meld group.
-	s.meldGroups = append(s.meldGroups, NewOutTileGroup(kongTiles, OutTileGroupTypeConcealedKong))
+	s.meldGroups = append(s.meldGroups, NewTileGroup(kongTiles, TileGroupTypeConcealedKong))
 	return kongTiles[0], true
 }
 
@@ -167,7 +167,7 @@ func (s *PlayerGameState) DeclareAdditionalKong(index int) (*domain.Tile, bool) 
 	}
 
 	for _, group := range s.meldGroups {
-		if group.GetGroupType() == OutTileGroupTypePong &&
+		if group.GetGroupType() == TileGroupTypePong &&
 			domain.CompareTiles(group.GetTiles()[0], theTile) == 0 {
 			group.UpgradeToKong(theTile)
 			theTile, err := s.hand.RemoveTile(index)
@@ -231,7 +231,7 @@ func (s *PlayerGameState) DeclareChow(t *domain.Tile, index1, index2 int) (domai
 	s.hand.SetTiles(updatedTiles)
 
 	// Add the tiles to a meld group.
-	s.meldGroups = append(s.meldGroups, NewOutTileGroup(chowTiles, OutTileGroupTypeChow))
+	s.meldGroups = append(s.meldGroups, NewTileGroup(chowTiles, TileGroupTypeChow))
 	return chowTiles, true
 }
 
@@ -251,7 +251,7 @@ func (s *PlayerGameState) GetDiscardedTiles() domain.Tiles {
 }
 
 // GetMeldGroups ...
-func (s *PlayerGameState) GetMeldGroups() OutTileGroups {
+func (s *PlayerGameState) GetMeldGroups() TileGroups {
 	return s.meldGroups
 }
 
