@@ -1,9 +1,9 @@
 package rules
 
 import (
-	"github.com/golang/glog"
 	"fmt"
 	"github.com/derekimcheng/mj/domain"
+	"github.com/golang/glog"
 	"sort"
 )
 
@@ -37,6 +37,13 @@ func (g *TileGroup) GetGroupType() TileGroupType {
 // String ...
 func (g *TileGroup) String() string {
 	return fmt.Sprintf("%s: %v", g.groupType, g.tiles)
+}
+
+// IsKanType returns true if the group is a "kan" - i.e., pong or kong.
+func (g *TileGroup) IsKanType() bool {
+	return g.GetGroupType() == TileGroupTypePong ||
+		g.GetGroupType() == TileGroupTypeKong ||
+		g.GetGroupType() == TileGroupTypeConcealedKong
 }
 
 // NewTileGroup creates a new TileGroup with the given parameters. The input tiles is not

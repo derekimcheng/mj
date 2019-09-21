@@ -14,14 +14,15 @@ type PlayerGameState struct {
 	bonusTiles     domain.Tiles
 	discardedTiles domain.Tiles
 	meldGroups     TileGroups
+	windOrdinal int
 }
 
 // NewPlayerGameState creates a blank PlayerGameState object.
-func NewPlayerGameState(hand *domain.Hand) *PlayerGameState {
+func NewPlayerGameState(hand *domain.Hand, windOrdinal int) *PlayerGameState {
 	if hand == nil {
 		panic(errors.New("Given hand cannot be nil"))
 	}
-	return &PlayerGameState{hand: hand, bonusTiles: nil, discardedTiles: nil}
+	return &PlayerGameState{hand: hand, bonusTiles: nil, discardedTiles: nil, windOrdinal: windOrdinal}
 }
 
 // SortHand sorts the tiles in the player's hand.
@@ -253,6 +254,11 @@ func (s *PlayerGameState) GetDiscardedTiles() domain.Tiles {
 // GetMeldGroups ...
 func (s *PlayerGameState) GetMeldGroups() TileGroups {
 	return s.meldGroups
+}
+
+// GetWindOrdinal ...
+func (s *PlayerGameState) GetWindOrdinal() int {
+	return s.windOrdinal
 }
 
 func (s *PlayerGameState) countSimilarTilesInHand(t *domain.Tile) int {

@@ -64,7 +64,7 @@ func Test_ComputeOutPlans_AllPongs(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	player := NewPlayerGameState(hand)
+	player := NewPlayerGameState(hand, 0)
 	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, NewOutTileSource(hand.GetTiles()[0], OutTileSourceTypeSelfDrawn))
 	plans := calculator.Calculate()
 	// Note: the tiles created below have the same data layout as the tiles above, but they are
@@ -119,7 +119,7 @@ func Test_ComputeOutPlans_PongsOrChows(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	player := NewPlayerGameState(hand)
+	player := NewPlayerGameState(hand, 0)
 	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, NewOutTileSource(hand.GetTiles()[0], OutTileSourceTypeSelfDrawn))
 	plans := calculator.Calculate()
 
@@ -262,7 +262,7 @@ func Test_ComputeOutPlans_NineGates(t *testing.T) {
 		outTile := domain.CreateTileForTest(t, dots, x)
 		hand.AddTile(outTile)
 
-		player := NewPlayerGameState(hand)
+		player := NewPlayerGameState(hand, 0)
 		calculator := NewOutPlanCalculator(GetSuitsForGame(), player, NewOutTileSource(hand.GetTiles()[0], OutTileSourceTypeSelfDrawn))
 		plans := calculator.Calculate()
 		assert.NotEmpty(t, plans, "Nine gates failed with tile %s", outTile)
@@ -289,7 +289,7 @@ func Test_ComputeOutPlans_ThreeQuadruples(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	player := NewPlayerGameState(hand)
+	player := NewPlayerGameState(hand, 0)
 	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, NewOutTileSource(hand.GetTiles()[0], OutTileSourceTypeSelfDrawn))
 	plans := calculator.Calculate()
 
@@ -410,7 +410,7 @@ func Test_ComputeOutPlans_PairAndAChow(t *testing.T) {
 	hand := domain.NewHand()
 	hand.SetTiles(tiles)
 
-	player := NewPlayerGameState(hand)
+	player := NewPlayerGameState(hand, 0)
 	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, NewOutTileSource(hand.GetTiles()[0], OutTileSourceTypeSelfDrawn))
 	plans := calculator.Calculate()
 

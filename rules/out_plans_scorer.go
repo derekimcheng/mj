@@ -28,10 +28,10 @@ func (ps ScoredOutPlans) Swap(i, j int) {
 // Less ... (sort.Sort implementation)
 func (ps ScoredOutPlans) Less(i, j int) bool {
 	if scoreDiff := ps[i].TotalScore - ps[j].TotalScore; scoreDiff != 0 {
-		return scoreDiff < 0
+		return scoreDiff > 0
 	}
 	// Assumes Patterns are already sorted. Whoever has the biggest individual pattern wins.
-	return ComparePatterns(ps[i].Patterns[0], ps[j].Patterns[0]) < 0
+	return ComparePatterns(ps[i].Patterns[0], ps[j].Patterns[0]) > 0
 }
 
 // String ...
@@ -40,6 +40,7 @@ func (ps ScoredOutPlans) String() string {
 	str += fmt.Sprintf("Number of possible out plans: %d\n", len(ps))
 	for i, plan := range ps {
 		str += fmt.Sprintf("  Plan %d:\n", i+1)
+		str += fmt.Sprintf("  %s\n", plan.Plan)
 		str += fmt.Sprintf("  Total score: %d\n", plan.TotalScore)
 		str += fmt.Sprintf("  Patterns:\n")
 		for _, pattern := range plan.Patterns {
@@ -89,12 +90,24 @@ func (ps Patterns) Swap(i, j int) {
 
 // Less ... (sort.Sort implementation)
 func (ps Patterns) Less(i, j int) bool {
-	return ComparePatterns(ps[i], ps[j]) < 0
+	return ComparePatterns(ps[i], ps[j]) > 0
+}
+
+// OutPlanScoringContext is a struct that contains context for scoring besides the out plan itself.
+type OutPlanScoringContext struct {
+	OutTileSource   *OutTileSource
+	PlayerGameState *PlayerGameState
+}
+
+// NewOutPlanScoringContext ...
+func NewOutPlanScoringContext(outTileSource *OutTileSource,
+	playerGameState *PlayerGameState) *OutPlanScoringContext {
+	return &OutPlanScoringContext{OutTileSource: outTileSource, PlayerGameState: playerGameState}
 }
 
 // OutPlansScorer scores a list of plans according to the implementation's rules.
 type OutPlansScorer interface {
-	// ScoreOutPlans scores the given plans and the OutTileSource and returns them in descending
+	// ScoreOutPlans scores the given plans and the context and returns them in descending
 	// score order.
-	ScoreOutPlans(plans OutPlans, outTileSource *OutTileSource) ScoredOutPlans
+	ScoreOutPlans(plans OutPlans, context *OutPlanScoringContext) ScoredOutPlans
 }

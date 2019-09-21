@@ -48,15 +48,15 @@ func (p OutPlan) String() string {
 	for _, handGroup := range p.handGroups {
 		handGroupStrs = append(handGroupStrs, handGroup.String())
 	}
-	hand := fmt.Sprintf("Hand: %s", strings.Join(handGroupStrs, ", "))
+	hand := fmt.Sprintf("{Hand: %s}", strings.Join(handGroupStrs, ", "))
 
 	meldedGroupStrs := []string{}
 	for _, meldedGroup := range p.meldedGroups {
 		meldedGroupStrs = append(meldedGroupStrs, meldedGroup.String())
 	}
-	melded := fmt.Sprintf("Melded: %s", strings.Join(meldedGroupStrs, ", "))
+	melded := fmt.Sprintf("{Melded: %s}", strings.Join(meldedGroupStrs, ", "))
 
-	return hand + " " + melded
+	return hand + "  " + melded
 }
 
 // NewOutPlan creates a new OutPlan with the given parameters. The input groups is not

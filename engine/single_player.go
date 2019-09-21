@@ -126,7 +126,8 @@ func (r *SinglePlayerRunner) initializePlayer() error {
 	}
 
 	hand.Sort()
-	r.player = rules.NewPlayerGameState(hand)
+	// In single player mode, the player's prevailing wind is always East (0).
+	r.player = rules.NewPlayerGameState(hand, 0)
 	glog.V(2).Infof("Populated hand: %s\n", hand)
 	return nil
 }
@@ -325,10 +326,11 @@ func (r *SinglePlayerRunner) checkForOut(outTileSource *rules.OutTileSource) boo
 	plans := counter.Calculate()
 
 	if len(plans) > 0 {
-		fmt.Printf("Out: %s. Plans: %s\n", outTileSource, plans)
+		fmt.Printf("Out: %s.\n", outTileSource)
 		if *flags.ReportScoringFlag {
 			scorer := zj.NewOutPlansScorer()
-			scoredPlans := scorer.ScoreOutPlans(plans, outTileSource)
+			context := rules.NewOutPlanScoringContext(outTileSource, r.player)
+			scoredPlans := scorer.ScoreOutPlans(plans, context)
 			fmt.Printf("Detailed scoring:\n")
 			fmt.Printf("%s\n", scoredPlans)
 		}

@@ -69,3 +69,9 @@ func CanChow(s *domain.Suit) bool {
 func IsEligibleForHand(s *domain.Suit) bool {
 	return s.GetSuitType() != domain.SuitTypeBonus
 }
+
+// IsWindSuit returns whether the suit is the Wind suit. This can be used to distinguish between
+// Dragon and Wind suits.
+func IsWindSuit(s *domain.Suit) bool {
+	return s == winds
+}

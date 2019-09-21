@@ -5,7 +5,7 @@ package domain
 type SuitType int
 
 const (
-	// SuitTypeSimple - typically, this has 10 values from 1 to 9 inclusive. This suit type can be
+	// SuitTypeSimple - typically, this has 9 values from 1 to 9 inclusive. This suit type can be
 	// considered both for melds and chows. Examples: Bamboo, Dots, Characters.
 	SuitTypeSimple SuitType = iota
 	// SuitTypeHonor - typically, this has 4 values which are enumerable, but are typically considered for
