@@ -9,13 +9,13 @@ import (
 )
 
 // commandAliases contains a mapping of command shortcuts.
-var commandAliases = map[string]string {
+var commandAliases = map[string]string{
 	"ak": AdditionalKong,
-	"c": Chow,
+	"c":  Chow,
 	"ck": ConcealedKong,
-	"d": DiscardTile,
-	"k": Kong,
-	"p": Pong,
+	"d":  DiscardTile,
+	"k":  Kong,
+	"p":  Pong,
 }
 
 // ConsoleCommandReceiver receives command from the an input stream, such as the console.
@@ -116,7 +116,7 @@ func parseCommand(input string) (*Command, error) {
 		}
 		return NewAdditionalKongCommand(index), nil
 	case Chow:
-		if len(args) < 1 {
+		if len(args) < 2 {
 			return nil, fmt.Errorf("Not enough args for Chow")
 		}
 		index1, err := strconv.Atoi(args[0])

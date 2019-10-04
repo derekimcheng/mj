@@ -60,6 +60,10 @@ var matchPatternFuncList = []matchPatternFunc{
 	oneSuit,
 	nineGates,
 	valueHonor,
+	threeDragons,
+	fourWinds,
+	allTriplets,
+	concealedTripletsAndKongs,
 }
 
 // 1.0 Trivial patterns
@@ -78,10 +82,12 @@ func allSequences(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*r
 
 // 1.2 Concealed Hand (門前清) : 5
 func concealedHand(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*rules.Pattern {
-	if len(plan.GetMeldedGroups()) == 0 {
-		return []*rules.Pattern{rules.NewPattern("門前清", 5)}
+	for _, group := range plan.GetMeldedGroups() {
+		if group.GetGroupType() != rules.TileGroupTypeConcealedKong {
+			return nil
+		}
 	}
-	return nil
+	return []*rules.Pattern{rules.NewPattern("門前清", 5)}
 }
 
 // 1.3 No Terminals (斷么九) : 5
@@ -188,6 +194,131 @@ func valueHonor(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*rul
 	}
 	patternName := fmt.Sprintf("番牌 (%d)", numHonors)
 	return []*rules.Pattern{rules.NewPattern(patternName, numHonors*10)}
+}
+
+// 3.2.1 Small Three Dragons (小三元) : 40
+// 3.2.2 Big Three Dragons (大三元) : 130
+func threeDragons(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*rules.Pattern {
+	allGroups := append(plan.GetHandGroups(), plan.GetMeldedGroups()...)
+	numKans := 0
+	numPairs := 0
+	for _, group := range allGroups {
+		firstTile := group.GetTiles()[0]
+		suit := firstTile.GetSuit()
+		if suit.GetSuitType() != domain.SuitTypeHonor || rules.IsWindSuit(suit) {
+			continue
+		}
+		if group.IsKanType() {
+			numKans++
+		} else {
+			// Else assume it is a pair since honor tiles can only be kans or pairs.
+			numPairs++
+		}
+	}
+
+	if numKans == 2 && numPairs == 1 {
+		return []*rules.Pattern{rules.NewPattern("小三元", 40)}
+	} else if numKans == 3 {
+		return []*rules.Pattern{rules.NewPattern("大三元", 130)}
+	}
+	return nil
+}
+
+// 3.3.1 Small Three Winds (小三風) : 30
+// 3.3.2 Big Three Winds (大三風) : 120
+// 3.3.3 Small Four Winds (小四喜) : 320
+// 3.3.4 Big Four Winds (大四喜) : 400
+func fourWinds(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*rules.Pattern {
+	allGroups := append(plan.GetHandGroups(), plan.GetMeldedGroups()...)
+	numKans := 0
+	numPairs := 0
+	for _, group := range allGroups {
+		firstTile := group.GetTiles()[0]
+		suit := firstTile.GetSuit()
+		if !rules.IsWindSuit(suit) {
+			continue
+		}
+		if group.IsKanType() {
+			numKans++
+		} else {
+			// Else assume it is a pair since honor tiles can only be kans or pairs.
+			numPairs++
+		}
+	}
+
+	if numKans == 2 && numPairs == 1 {
+		return []*rules.Pattern{rules.NewPattern("小三風", 30)}
+	} else if numKans == 3 {
+		if numPairs == 0 {
+			return []*rules.Pattern{rules.NewPattern("大三風", 120)}
+		}
+		return []*rules.Pattern{rules.NewPattern("小四喜", 320)}
+	} else if numKans == 4 {
+		return []*rules.Pattern{rules.NewPattern("大四喜", 400)}
+	}
+	return nil
+}
+
+// 3.4 All Honors (字一色) : 320 - covered by oneSuit().
+
+// 4.0 Triplets and Kong
+
+// 4.1 All Triplets (對對和) : 30
+func allTriplets(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*rules.Pattern {
+	allGroups := append(plan.GetHandGroups(), plan.GetMeldedGroups()...)
+	for _, group := range allGroups {
+		if !group.IsKanType() && group.GetGroupType() != rules.TileGroupTypePair {
+			return nil
+		}
+	}
+	return []*rules.Pattern{rules.NewPattern("對對和", 30)}
+}
+
+// 4.2.1 Two Concealed Triplets (二暗刻) : 5
+// 4.2.2 Three Concealed Triplets (三暗刻) : 30
+// 4.2.3 Four Concealed Triplets (四暗刻) : 125
+// 4.3.1 One Kong (一槓) : 5
+// 4.3.2 Two Kong (二槓) : 20
+// 4.3.3 Three Kong (三槓) : 120
+// 4.3.4 Four Kong (四槓) : 480
+func concealedTripletsAndKongs(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*rules.Pattern {
+	numConcealedTriplets := 0
+	numKongs := 0
+	for _, group := range plan.GetMeldedGroups() {
+		switch group.GetGroupType() {
+		case rules.TileGroupTypeConcealedKong:
+			numConcealedTriplets++
+			numKongs++
+		case rules.TileGroupTypeKong:
+			numKongs++
+		}
+	}
+	for _, group := range plan.GetHandGroups() {
+		if group.GetGroupType() == rules.TileGroupTypePong {
+			numConcealedTriplets++
+		}
+	}
+
+	var patterns []*rules.Pattern
+	switch numConcealedTriplets {
+	case 2:
+		patterns = append(patterns, rules.NewPattern("二暗刻", 5))
+	case 3:
+		patterns = append(patterns, rules.NewPattern("三暗刻", 30))
+	case 4:
+		patterns = append(patterns, rules.NewPattern("四暗刻", 125))
+	}
+	switch numKongs {
+	case 1:
+		patterns = append(patterns, rules.NewPattern("一槓", 5))
+	case 2:
+		patterns = append(patterns, rules.NewPattern("二槓", 20))
+	case 3:
+		patterns = append(patterns, rules.NewPattern("三槓", 120))
+	case 4:
+		patterns = append(patterns, rules.NewPattern("四槓", 480))
+	}
+	return patterns
 }
 
 type simpleSuitCount int
