@@ -44,6 +44,10 @@ import (
 // 	return true
 // }
 
+func createOutTileSourceForTest(tile *domain.Tile) *OutTileSource {
+	return NewOutTileSource(OutTileSourceTypeSelfDrawn, tile, nil)
+}
+
 func Test_ComputeOutPlans_AllPongs(t *testing.T) {
 	tiles := []*domain.Tile{
 		domain.CreateTileForTest(t, dots, 0),
@@ -65,7 +69,8 @@ func Test_ComputeOutPlans_AllPongs(t *testing.T) {
 	hand.SetTiles(tiles)
 
 	player := NewPlayerGameState(hand, 0)
-	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, NewOutTileSource(hand.GetTiles()[0], OutTileSourceTypeSelfDrawn))
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), player,
+		createOutTileSourceForTest(hand.GetTiles()[0]))
 	plans := calculator.Calculate()
 	// Note: the tiles created below have the same data layout as the tiles above, but they are
 	// distinct objects. The test assertions below rely on deep comparison for this test to pass.
@@ -120,7 +125,8 @@ func Test_ComputeOutPlans_PongsOrChows(t *testing.T) {
 	hand.SetTiles(tiles)
 
 	player := NewPlayerGameState(hand, 0)
-	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, NewOutTileSource(hand.GetTiles()[0], OutTileSourceTypeSelfDrawn))
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), player,
+		createOutTileSourceForTest(hand.GetTiles()[0]))
 	plans := calculator.Calculate()
 
 	expected := OutPlans{
@@ -263,7 +269,8 @@ func Test_ComputeOutPlans_NineGates(t *testing.T) {
 		hand.AddTile(outTile)
 
 		player := NewPlayerGameState(hand, 0)
-		calculator := NewOutPlanCalculator(GetSuitsForGame(), player, NewOutTileSource(hand.GetTiles()[0], OutTileSourceTypeSelfDrawn))
+		calculator := NewOutPlanCalculator(GetSuitsForGame(), player,
+			createOutTileSourceForTest(hand.GetTiles()[0]))
 		plans := calculator.Calculate()
 		assert.NotEmpty(t, plans, "Nine gates failed with tile %s", outTile)
 	}
@@ -290,7 +297,8 @@ func Test_ComputeOutPlans_ThreeQuadruples(t *testing.T) {
 	hand.SetTiles(tiles)
 
 	player := NewPlayerGameState(hand, 0)
-	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, NewOutTileSource(hand.GetTiles()[0], OutTileSourceTypeSelfDrawn))
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), player,
+		createOutTileSourceForTest(hand.GetTiles()[0]))
 	plans := calculator.Calculate()
 
 	expected := OutPlans{
@@ -411,7 +419,8 @@ func Test_ComputeOutPlans_PairAndAChow(t *testing.T) {
 	hand.SetTiles(tiles)
 
 	player := NewPlayerGameState(hand, 0)
-	calculator := NewOutPlanCalculator(GetSuitsForGame(), player, NewOutTileSource(hand.GetTiles()[0], OutTileSourceTypeSelfDrawn))
+	calculator := NewOutPlanCalculator(GetSuitsForGame(), player,
+		createOutTileSourceForTest(hand.GetTiles()[0]))
 	plans := calculator.Calculate()
 
 	expected := OutPlans{

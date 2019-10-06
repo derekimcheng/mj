@@ -1,11 +1,11 @@
 package engine
 
 import (
-	"github.com/derekimcheng/mj/rules/zj"
 	"fmt"
 	"github.com/derekimcheng/mj/domain"
 	"github.com/derekimcheng/mj/flags"
 	"github.com/derekimcheng/mj/rules"
+	"github.com/derekimcheng/mj/rules/zj"
 	"github.com/derekimcheng/mj/ui"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -45,7 +45,8 @@ func withCommands(types ...ui.CommandType) ui.CommandTypes {
 //     the "hand".
 // (3) The following consists of a single round: Drawing -> Player action -> Discard -> Burn. The
 //     Burn phase may be executed multiple times (3 times would simulate a 4-player game), the last
-//     of which allows the player to chow the tile being discarded.
+//     of which allows the player to chow the tile being discarded. The exception is the first round
+//     where Drawing is not performed.
 // Drawing:
 // (D1) The player draws a tile from the front of the deck.
 // (D2) If the tile is a bonus tile, it is moved to the bonus area. Go to step (D2)'. Otherwise,
@@ -77,11 +78,13 @@ type SinglePlayerRunner struct {
 	started bool
 	deck    domain.Deck
 	player  *rules.PlayerGameState
+	// pseudoOpponentGameState is used for populating DiscardInfo. It does not contain a real hand.
+	// However, it is used to store "burn" tiles and bonus tiles drawn outside the player's turn.
+	// Its wind ordinal is the one that proceeds from that of the player.
+	pseudoOpponentGameState *rules.PlayerGameState
 
 	// Tile drawn in the current Burn stage which can be used for a meld.
 	currentBurnTile *domain.Tile
-	otherBonuses    domain.Tiles
-	otherDiscards   domain.Tiles
 }
 
 // NewSinglePlayerRunner returns a new instance of NewSinglePlayerRunner with the given input
@@ -127,7 +130,12 @@ func (r *SinglePlayerRunner) initializePlayer() error {
 
 	hand.Sort()
 	// In single player mode, the player's prevailing wind is always East (0).
-	r.player = rules.NewPlayerGameState(hand, 0)
+	windOrdinal := 0
+	const numWindOrdinals = 4
+
+	r.player = rules.NewPlayerGameState(hand, windOrdinal)
+	r.pseudoOpponentGameState = rules.NewPlayerGameState(
+		domain.NewHand(), (windOrdinal+1)%numWindOrdinals)
 	glog.V(2).Infof("Populated hand: %s\n", hand)
 	return nil
 }
@@ -178,24 +186,30 @@ func (r *SinglePlayerRunner) startPlayerRoundLoop() {
 		fmt.Printf("Start of round %d\n", round)
 
 		if round == 1 || !playerMelded {
-			// Draw phase
-			tile := r.drawFromDeckFront()
-			source := rules.OutTileSourceTypeSelfDrawn
-			fmt.Printf("Drawn tile %s\n", tile)
-			// TODO: add observer for player drawing tile
-			if rules.IsEligibleForHand(tile.GetSuit()) {
-				// TODO: add observer for adding tile to hand
-				r.addTileToHand(tile)
+			var source rules.OutTileSourceType
+			var tile *domain.Tile
+			if round == 1 {
+				source = rules.OutTileSourceTypeInitialHand
 			} else {
-				r.addTileToBonusArea(tile)
-				tile = r.replaceTileLoop()
-				source = rules.OutTileSourceTypeSelfDrawnReplacement
+				// Draw phase
+				tile = r.drawFromDeckFront()
+				source = rules.OutTileSourceTypeSelfDrawn
+				if round > 1 {
+					fmt.Printf("Drawn tile %s\n", tile)
+				}
+				if rules.IsEligibleForHand(tile.GetSuit()) {
+					r.addTileToHand(tile)
+				} else {
+					r.addTileToBonusArea(tile)
+					tile = r.replaceTileLoop()
+					source = rules.OutTileSourceTypeSelfDrawnReplacement
+				}
 			}
 
 			fmt.Printf("Hand: %s\n", r.player.GetHand())
 			// Player action phase
 			r.promptAndExecutePlayerAction(commandsAfterDrawingTile,
-				rules.NewOutTileSource(tile, source))
+				rules.NewOutTileSource(source, tile, nil))
 		}
 
 		playerMelded = false
@@ -224,7 +238,6 @@ func (r *SinglePlayerRunner) burnSingleTile(chowAllowed bool) bool {
 	tile := r.drawFromDeckFront()
 	round := 1
 	for !rules.IsEligibleForHand(tile.GetSuit()) {
-		// We will add bonus tiles drawn in the burn phase to the player.
 		r.addTileToOtherBonusArea(tile)
 
 		fmt.Printf("Drawing a replacement tile from the back of deck (round %d)\n", round)
@@ -236,15 +249,16 @@ func (r *SinglePlayerRunner) burnSingleTile(chowAllowed bool) bool {
 	fmt.Printf("Burning tile %s\n", tile)
 	r.currentBurnTile = tile
 
+	discardInfo := rules.NewDiscardInfo(r.pseudoOpponentGameState)
 	var cmdType ui.CommandType
 	if chowAllowed {
 		cmdType = r.promptAndExecutePlayerAction(
 			withCommands(ui.Pong, ui.Kong, ui.Chow, ui.Pass, ui.Out),
-			rules.NewOutTileSource(tile, rules.OutTileSourceTypeDiscard))
+			rules.NewOutTileSource(rules.OutTileSourceTypeDiscard, tile, discardInfo))
 	} else {
 		cmdType = r.promptAndExecutePlayerAction(
 			withCommands(ui.Pong, ui.Kong, ui.Pass, ui.Out),
-			rules.NewOutTileSource(tile, rules.OutTileSourceTypeDiscard))
+			rules.NewOutTileSource(rules.OutTileSourceTypeDiscard, tile, discardInfo))
 	}
 
 	melded := cmdType != ui.Pass
@@ -329,7 +343,8 @@ func (r *SinglePlayerRunner) checkForOut(outTileSource *rules.OutTileSource) boo
 		fmt.Printf("Out: %s.\n", outTileSource)
 		if *flags.ReportScoringFlag {
 			scorer := zj.NewOutPlansScorer()
-			context := rules.NewOutPlanScoringContext(outTileSource, r.player)
+			context := rules.NewOutPlanScoringContext(
+				outTileSource, r.player, r.deck.NumRemainingTiles())
 			scoredPlans := scorer.ScoreOutPlans(plans, context)
 			fmt.Printf("Detailed scoring:\n")
 			fmt.Printf("%s\n", scoredPlans)
@@ -382,7 +397,8 @@ func (r *SinglePlayerRunner) discardCurrentBurnTile() {
 
 	// TODO: notify observer
 	fmt.Printf("Moving burn tile %s to other discards\n", r.currentBurnTile)
-	r.otherDiscards = append(r.otherDiscards, r.currentBurnTile)
+	r.pseudoOpponentGameState.AddTileToHand(r.currentBurnTile)
+	r.pseudoOpponentGameState.DiscardTileAt(0)
 	r.currentBurnTile = nil
 }
 
@@ -423,7 +439,7 @@ func (r *SinglePlayerRunner) declareKong() bool {
 	// After drawing the replacement tile, the player may go out, or they must discard a tile.
 	replacementTile := r.replaceTileLoop()
 	r.promptAndExecutePlayerAction(commandsAfterDrawingTile,
-		rules.NewOutTileSource(replacementTile, rules.OutTileSourceTypeSelfDrawnReplacement))
+		rules.NewOutTileSource(rules.OutTileSourceTypeSelfDrawnReplacement, replacementTile, nil))
 	return removed
 }
 
@@ -442,7 +458,7 @@ func (r *SinglePlayerRunner) declareConcealedKong(index int) bool {
 	// TODO: don't do recursion?
 	replacementTile := r.replaceTileLoop()
 	r.promptAndExecutePlayerAction(commandsAfterDrawingTile,
-		rules.NewOutTileSource(replacementTile, rules.OutTileSourceTypeSelfDrawnReplacement))
+		rules.NewOutTileSource(rules.OutTileSourceTypeSelfDrawnReplacement, replacementTile, nil))
 	return removed
 }
 
@@ -461,7 +477,7 @@ func (r *SinglePlayerRunner) declareAdditionalKong(index int) bool {
 	// TODO: don't do recursion?
 	replacementTile := r.replaceTileLoop()
 	r.promptAndExecutePlayerAction(commandsAfterDrawingTile,
-		rules.NewOutTileSource(replacementTile, rules.OutTileSourceTypeSelfDrawnReplacement))
+		rules.NewOutTileSource(rules.OutTileSourceTypeSelfDrawnReplacement, replacementTile, nil))
 	return removed
 }
 
@@ -497,7 +513,7 @@ func (r *SinglePlayerRunner) addTileToBonusArea(t *domain.Tile) {
 
 func (r *SinglePlayerRunner) addTileToOtherBonusArea(t *domain.Tile) {
 	fmt.Printf("Adding tile to other bonus area: %s\n", t)
-	r.otherBonuses = append(r.otherBonuses, t)
+	r.pseudoOpponentGameState.AddTileToBonusArea(t)
 	// TODO: notify observer
 }
 

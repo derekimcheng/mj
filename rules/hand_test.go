@@ -1,10 +1,10 @@
 package rules
 
 import (
-	"github.com/stretchr/testify/require"
+	"github.com/derekimcheng/mj/domain"
 	"github.com/derekimcheng/mj/flags"
 	"github.com/stretchr/testify/assert"
-	"github.com/derekimcheng/mj/domain"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -20,7 +20,11 @@ func Test_PopulateHands(t *testing.T) {
 	}
 	PopulateHands(deck, hands)
 
-	for _, h := range hands {
-		assert.Equal(t, numTilesPerHand, h.NumTiles())
+	for i, h := range hands {
+		if i == 0 {
+			assert.Equal(t, numTilesPerHand+1, h.NumTiles())
+		} else {
+			assert.Equal(t, numTilesPerHand, h.NumTiles())
+		}
 	}
 }

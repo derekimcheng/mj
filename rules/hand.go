@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"errors"
 	"fmt"
 	"github.com/derekimcheng/mj/domain"
 )
@@ -13,7 +14,11 @@ const (
 // PopulateHands populates the given hands with the given deck. Returns nil on success, or error
 // if an error occurred.
 func PopulateHands(d domain.Deck, hands []*domain.Hand) error {
-	numRequiredTiles := numTilesPerHand * numTilesPerInitialDraw
+	if len(hands) == 0 {
+		return errors.New("Must specify at least one hand")
+	}
+
+	numRequiredTiles := numTilesPerHand*numTilesPerInitialDraw + 1
 	if d.NumRemainingTiles() < numRequiredTiles {
 		return fmt.Errorf("Not enough remaining tiles in deck, have %d, need %d",
 			d.NumRemainingTiles(), numRequiredTiles)
@@ -35,6 +40,8 @@ func PopulateHands(d domain.Deck, hands []*domain.Hand) error {
 		}
 	}
 
+	// 1 more draw for the first player.
+	drawTilesFromDeck(d, hands[0], 1)
 	return nil
 }
 

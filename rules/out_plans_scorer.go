@@ -95,14 +95,19 @@ func (ps Patterns) Less(i, j int) bool {
 
 // OutPlanScoringContext is a struct that contains context for scoring besides the out plan itself.
 type OutPlanScoringContext struct {
-	OutTileSource   *OutTileSource
-	PlayerGameState *PlayerGameState
+	OutTileSource           *OutTileSource
+	PlayerGameState         *PlayerGameState
+	NumRemainingTilesInDeck int
 }
 
 // NewOutPlanScoringContext ...
 func NewOutPlanScoringContext(outTileSource *OutTileSource,
-	playerGameState *PlayerGameState) *OutPlanScoringContext {
-	return &OutPlanScoringContext{OutTileSource: outTileSource, PlayerGameState: playerGameState}
+	playerGameState *PlayerGameState, numRemainingTilesInDeck int) *OutPlanScoringContext {
+	return &OutPlanScoringContext{
+		OutTileSource:           outTileSource,
+		PlayerGameState:         playerGameState,
+		NumRemainingTilesInDeck: numRemainingTilesInDeck,
+	}
 }
 
 // OutPlansScorer scores a list of plans according to the implementation's rules.
