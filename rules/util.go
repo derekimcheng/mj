@@ -6,19 +6,19 @@ import (
 
 var (
 	thirteenOrphanTiles = []domain.TileBase{
-		domain.NewTileBase(bamboo, 0),
-		domain.NewTileBase(bamboo, 8),
-		domain.NewTileBase(dots, 0),
-		domain.NewTileBase(dots, 8),
-		domain.NewTileBase(characters, 0),
-		domain.NewTileBase(characters, 8),
-		domain.NewTileBase(winds, 0),
-		domain.NewTileBase(winds, 1),
-		domain.NewTileBase(winds, 2),
-		domain.NewTileBase(winds, 3),
-		domain.NewTileBase(dragons, 0),
-		domain.NewTileBase(dragons, 1),
-		domain.NewTileBase(dragons, 2),
+		domain.NewTileBase(Bamboo, 0),
+		domain.NewTileBase(Bamboo, 8),
+		domain.NewTileBase(Dots, 0),
+		domain.NewTileBase(Dots, 8),
+		domain.NewTileBase(Characters, 0),
+		domain.NewTileBase(Characters, 8),
+		domain.NewTileBase(Winds, 0),
+		domain.NewTileBase(Winds, 1),
+		domain.NewTileBase(Winds, 2),
+		domain.NewTileBase(Winds, 3),
+		domain.NewTileBase(Dragons, 0),
+		domain.NewTileBase(Dragons, 1),
+		domain.NewTileBase(Dragons, 2),
 	}
 )
 

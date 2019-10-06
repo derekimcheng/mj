@@ -40,10 +40,11 @@ func winOnInitialRound(plan rules.OutPlan, context *rules.OutPlanScoringContext)
 	if context.OutTileSource.SourceType == rules.OutTileSourceTypeInitialHand {
 		return []*rules.Pattern{rules.NewPattern("天和", 155)}
 	}
-	if context.OutTileSource.SourceType == rules.OutTileSourceTypeDiscard &&
-		context.PlayerGameState.GetWindOrdinal() == 0 &&
-		len(context.PlayerGameState.GetDiscardedTiles()) == 0 {
-		return []*rules.Pattern{rules.NewPattern("地和", 155)}
+	if context.OutTileSource.SourceType == rules.OutTileSourceTypeDiscard {
+		discardPlayer := context.OutTileSource.DiscardInfo.DiscardPlayer
+		if discardPlayer.GetWindOrdinal() == 0 && len(discardPlayer.GetDiscardedTiles()) == 0 {
+			return []*rules.Pattern{rules.NewPattern("地和", 155)}
+		}
 	}
 	return nil
 }

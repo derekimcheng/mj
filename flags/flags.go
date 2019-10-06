@@ -17,6 +17,8 @@ const (
 	AppModeDeck AppMode = "deck"
 	// AppModeSingle runs the single player mode.
 	AppModeSingle AppMode = "single"
+	// AppModeAnalyzeState analyzes and scores the input state.
+	AppModeAnalyzeState AppMode = "state"
 )
 
 // RuleNameFlag specifies the MJ rule name.

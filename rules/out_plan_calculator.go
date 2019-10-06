@@ -31,7 +31,7 @@ func NewOutPlanCalculator(suits []*domain.Suit, player *PlayerGameState,
 		inventory[s] = make([][]*domain.Tile, s.GetSize())
 	}
 	allTiles := player.GetHand().GetTiles()
-	if outTileSource.IsExternalSource() {
+	if IsExternalOutSourceType(outTileSource.SourceType) {
 		allTiles = append(allTiles, outTileSource.Tile)
 	}
 	for _, t := range allTiles {

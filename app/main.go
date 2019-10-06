@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/derekimcheng/mj/app/analyzer"
 	"github.com/derekimcheng/mj/domain"
 	"github.com/derekimcheng/mj/engine"
 	"github.com/derekimcheng/mj/flags"
@@ -23,6 +24,8 @@ func main() {
 		createAndDumpDeck()
 	case flags.AppModeSingle:
 		simulateSingleHand()
+	case flags.AppModeAnalyzeState:
+		analyzer.NewPlayerStateAnalyzer(os.Stdin).Start()
 	default:
 		printUsage()
 		os.Exit(1)

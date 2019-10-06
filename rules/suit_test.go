@@ -21,8 +21,8 @@ func Test_SuitsForGame(t *testing.T) {
 }
 
 func Test_CheckCanPong(t *testing.T) {
-	pongableSuits := []*domain.Suit{dots, bamboo, characters, winds, dragons}
-	nonPongableSuits := []*domain.Suit{flowers, seasons}
+	pongableSuits := []*domain.Suit{Dots, Bamboo, Characters, Winds, Dragons}
+	nonPongableSuits := []*domain.Suit{Flowers, Seasons}
 
 	for _, s := range pongableSuits {
 		assert.True(t, CanPong(s), "Cannot pong suit %s", s.GetName())
@@ -34,8 +34,8 @@ func Test_CheckCanPong(t *testing.T) {
 }
 
 func Test_CheckCanChow(t *testing.T) {
-	chowableSuits := []*domain.Suit{dots, bamboo, characters}
-	nonChowableSuits := []*domain.Suit{winds, dragons, flowers, seasons}
+	chowableSuits := []*domain.Suit{Dots, Bamboo, Characters}
+	nonChowableSuits := []*domain.Suit{Winds, Dragons, Flowers, Seasons}
 
 	for _, s := range chowableSuits {
 		assert.True(t, CanChow(s), "Cannot chow suit %s", s.GetName())
@@ -47,8 +47,8 @@ func Test_CheckCanChow(t *testing.T) {
 }
 
 func Test_IsEligibleForHand(t *testing.T) {
-	handSuits := []*domain.Suit{dots, bamboo, characters, winds, dragons}
-	nonHandSuits := []*domain.Suit{flowers, seasons}
+	handSuits := []*domain.Suit{Dots, Bamboo, Characters, Winds, Dragons}
+	nonHandSuits := []*domain.Suit{Flowers, Seasons}
 
 	for _, s := range handSuits {
 		assert.True(t, IsEligibleForHand(s), "Suit %s not eligible for hand", s.GetName())
@@ -67,40 +67,40 @@ func Test_TileFriendlyName(t *testing.T) {
 	}{
 		{
 			"Dots",
-			dots,
+			Dots,
 			[]string{"1 Dots", "2 Dots", "3 Dots", "4 Dots", "5 Dots", "6 Dots", "7 Dots",
 				"8 Dots", "9 Dots"},
 		},
 		{
 			"Bamboo",
-			bamboo,
+			Bamboo,
 			[]string{"1 Bamboo", "2 Bamboo", "3 Bamboo", "4 Bamboo", "5 Bamboo", "6 Bamboo",
 				"7 Bamboo", "8 Bamboo", "9 Bamboo"},
 		},
 		{
 			"Characters",
-			characters,
-			[]string{"1 Wan", "2 Wan", "3 Wan", "4 Wan", "5 Wan", "6 Wan", "7 Wan", "8 Wan",
-				"9 Wan"},
+			Characters,
+			[]string{"1 Man", "2 Man", "3 Man", "4 Man", "5 Man", "6 Man", "7 Man", "8 Man",
+				"9 Man"},
 		},
 		{
 			"Winds",
-			winds,
+			Winds,
 			[]string{"East", "South", "West", "North"},
 		},
 		{
 			"Dragons",
-			dragons,
-			[]string{"White", "Red", "Blue"},
+			Dragons,
+			[]string{"Red", "Green", "Blue"},
 		},
 		{
 			"Flowers",
-			flowers,
+			Flowers,
 			[]string{"Flower 1", "Flower 2", "Flower 3", "Flower 4"},
 		},
 		{
 			"Seasons",
-			seasons,
+			Seasons,
 			[]string{"Season 1", "Season 2", "Season 3", "Season 4"},
 		},
 	}

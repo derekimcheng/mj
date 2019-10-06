@@ -59,10 +59,16 @@ const (
 	OutTileSourceTypeInitialHand
 )
 
-// IsExternalSource returns whether the out tile came from another player.
-func (s *OutTileSource) IsExternalSource() bool {
-	return s.SourceType == OutTileSourceTypeDiscard ||
-		s.SourceType == OutTileSourceTypeAdditionalKong
+// IsSelfDrawnType returns whether the out tile came from self-drawn.
+func IsSelfDrawnType(sourceType OutTileSourceType) bool {
+	return sourceType == OutTileSourceTypeSelfDrawn ||
+		sourceType == OutTileSourceTypeSelfDrawnReplacement
+}
+
+// IsExternalOutSourceType returns whether the out tile came from another player.
+func IsExternalOutSourceType(sourceType OutTileSourceType) bool {
+	return sourceType == OutTileSourceTypeDiscard ||
+		sourceType == OutTileSourceTypeAdditionalKong
 }
 
 // String ...

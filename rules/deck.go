@@ -18,12 +18,12 @@ type tileCountRules []tileCountRule
 
 // tileCountRulesHK is the set of rules for Hong Kong MJ.
 var tileCountRulesHK = tileCountRules{
-	{dots, 4}, {bamboo, 4}, {characters, 4}, {winds, 4}, {dragons, 4}, {flowers, 1}, {seasons, 1},
+	{Dots, 4}, {Bamboo, 4}, {Characters, 4}, {Winds, 4}, {Dragons, 4}, {Flowers, 1}, {Seasons, 1},
 }
 
 // tileCountRulesZJ is the set of rules for Zung Jung MJ.
 var tileCountRulesZJ = tileCountRules{
-	{dots, 4}, {bamboo, 4}, {characters, 4}, {winds, 4}, {dragons, 4},
+	{Dots, 4}, {Bamboo, 4}, {Characters, 4}, {Winds, 4}, {Dragons, 4},
 }
 
 // tileCountRulesMap is a map from the string abbreviation of a MJ rule name to its set of rules.

@@ -7,16 +7,23 @@ import (
 )
 
 var (
-	dots   = domain.NewSuit("Dots", domain.SuitTypeSimple, 9, ordinalPlusOneAndSuit("Dots"))
-	bamboo = domain.NewSuit("Bamboo", domain.SuitTypeSimple, 9,
+	// Dots is one of the three simple types.
+	Dots = domain.NewSuit("Dots", domain.SuitTypeSimple, 9, ordinalPlusOneAndSuit("Dots"))
+	// Bamboo is one of the three simple types.
+	Bamboo = domain.NewSuit("Bamboo", domain.SuitTypeSimple, 9,
 		ordinalPlusOneAndSuit("Bamboo"))
-	characters = domain.NewSuit("Characters", domain.SuitTypeSimple, 9,
-		ordinalPlusOneAndSuit("Wan"))
-	winds   = domain.NewSuit("Winds", domain.SuitTypeHonor, 4, fixedNameFromOrdinal(windNames))
-	dragons = domain.NewSuit("Dragons", domain.SuitTypeHonor, 3,
+	// Characters is one of the three simple types.
+	Characters = domain.NewSuit("Characters", domain.SuitTypeSimple, 9,
+		ordinalPlusOneAndSuit("Man"))
+	// Winds is one the two honor types.
+	Winds = domain.NewSuit("Winds", domain.SuitTypeHonor, 4, fixedNameFromOrdinal(windNames))
+	// Dragons is one the two honor types.
+	Dragons = domain.NewSuit("Dragons", domain.SuitTypeHonor, 3,
 		fixedNameFromOrdinal(dragonNames))
-	flowers = domain.NewSuit("Flowers", domain.SuitTypeBonus, 4, suitAndOrdinalPlusOne("Flower"))
-	seasons = domain.NewSuit("Seasons", domain.SuitTypeBonus, 4, suitAndOrdinalPlusOne("Season"))
+	// Flowers is one the two bonus types.
+	Flowers = domain.NewSuit("Flowers", domain.SuitTypeBonus, 4, suitAndOrdinalPlusOne("Flower"))
+	// Seasons is one the two bonus types.
+	Seasons = domain.NewSuit("Seasons", domain.SuitTypeBonus, 4, suitAndOrdinalPlusOne("Season"))
 )
 
 func ordinalPlusOneAndSuit(suffix string) domain.TileFriendlyNameFunc {
@@ -26,7 +33,7 @@ func ordinalPlusOneAndSuit(suffix string) domain.TileFriendlyNameFunc {
 }
 
 var windNames = []string{"East", "South", "West", "North"}
-var dragonNames = []string{"White", "Red", "Blue"}
+var dragonNames = []string{"Red", "Green", "Blue"}
 
 func fixedNameFromOrdinal(fixedNames []string) domain.TileFriendlyNameFunc {
 	return func(t *domain.Tile) string {
@@ -41,13 +48,13 @@ func suitAndOrdinalPlusOne(prefix string) domain.TileFriendlyNameFunc {
 }
 
 var suits = []*domain.Suit{
-	bamboo, characters, dots, // Simples
-	dragons, winds, // Honors
-	flowers, seasons, // Bonus
+	Bamboo, Characters, Dots, // Simples
+	Dragons, Winds, // Honors
+	Flowers, Seasons, // Bonus
 }
 
 // GetSuitsForGame returns the set of all suits used in the game.
-// TODO: test that the returned suits are in sorted order.
+// TODO: remove this and replace with one that takes in rule name as input.
 func GetSuitsForGame() []*domain.Suit {
 	return suits
 }
@@ -73,5 +80,5 @@ func IsEligibleForHand(s *domain.Suit) bool {
 // IsWindSuit returns whether the suit is the Wind suit. This can be used to distinguish between
 // Dragon and Wind suits.
 func IsWindSuit(s *domain.Suit) bool {
-	return s == winds
+	return s == Winds
 }

@@ -14,7 +14,7 @@ type PlayerGameState struct {
 	bonusTiles     domain.Tiles
 	discardedTiles domain.Tiles
 	meldGroups     TileGroups
-	windOrdinal int
+	windOrdinal    int
 }
 
 // NewPlayerGameState creates a blank PlayerGameState object.
@@ -22,7 +22,29 @@ func NewPlayerGameState(hand *domain.Hand, windOrdinal int) *PlayerGameState {
 	if hand == nil {
 		panic(errors.New("Given hand cannot be nil"))
 	}
-	return &PlayerGameState{hand: hand, bonusTiles: nil, discardedTiles: nil, windOrdinal: windOrdinal}
+	return &PlayerGameState{
+		hand:           hand,
+		bonusTiles:     nil,
+		discardedTiles: nil,
+		meldGroups:     nil,
+		windOrdinal:    windOrdinal,
+	}
+}
+
+// NewExistingPlayerGameState creates a PlayerGameState object with existing states. Used in
+// analyzer only. No validation is performed on the input.
+func NewExistingPlayerGameState(hand *domain.Hand, windOrdinal int, discardedTiles domain.Tiles,
+	meldGroups TileGroups) *PlayerGameState {
+	if hand == nil {
+		panic(errors.New("Given hand cannot be nil"))
+	}
+	return &PlayerGameState{
+		hand:           hand,
+		bonusTiles:     nil,
+		discardedTiles: discardedTiles,
+		meldGroups:     meldGroups,
+		windOrdinal:    windOrdinal,
+	}
 }
 
 // SortHand sorts the tiles in the player's hand.
