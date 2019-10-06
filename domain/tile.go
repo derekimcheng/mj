@@ -56,6 +56,14 @@ func (t *Tile) GetOrdinal() int {
 	return t.ordinal
 }
 
+// IsTerminal returns whether the tile is considered a terminal tile.
+func (t *Tile) IsTerminal() bool {
+	if t.GetSuit().GetSuitType() != SuitTypeSimple {
+		return false
+	}
+	return t.GetOrdinal() == 0 || t.GetOrdinal() == t.GetSuit().GetSize()-1
+}
+
 // String ...
 func (t *Tile) String() string {
 	if t.GetSuit().friendlyNameFunc != nil {

@@ -100,10 +100,11 @@ func matchSevenPairs(numRemainingTiles int, inventory *tileInventory) TileGroups
 	var outTiles domain.Tiles
 	for _, suit := range *inventory {
 		for _, tiles := range suit {
-			if len(tiles)%2 == 0 {
-				numPairs += len(tiles) / 2
-				outTiles = append(outTiles, tiles...)
+			if len(tiles)%2 != 0 {
+				return nil
 			}
+			numPairs += len(tiles) / 2
+			outTiles = append(outTiles, tiles...)
 		}
 	}
 	if numPairs != 7 {

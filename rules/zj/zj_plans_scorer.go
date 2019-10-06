@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/derekimcheng/mj/domain"
 	"github.com/derekimcheng/mj/rules"
+	"github.com/derekimcheng/mj/util"
 	"github.com/golang/glog"
 	"sort"
 )
@@ -65,6 +66,10 @@ var matchPatternFuncList = []matchPatternFunc{
 	allTriplets,
 	concealedTripletsAndKongs,
 	identicalSets,
+	threeSimilarSequences,
+	threeSimilarTriplets,
+	consecutiveSets,
+	terminals,
 }
 
 // 1.0 Trivial patterns
@@ -96,9 +101,7 @@ func noTerminals(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*ru
 	allGroups := append(plan.GetHandGroups(), plan.GetMeldedGroups()...)
 	for _, group := range allGroups {
 		for _, tile := range group.GetTiles() {
-			if tile.GetSuit().GetSuitType() != domain.SuitTypeSimple ||
-				tile.GetOrdinal() == 0 ||
-				tile.GetOrdinal() == tile.GetSuit().GetSize()-1 {
+			if tile.GetSuit().GetSuitType() != domain.SuitTypeSimple || tile.IsTerminal() {
 				return nil
 			}
 
@@ -115,7 +118,18 @@ func noTerminals(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*ru
 // 3.4 All Honors (字一色) : 320
 func oneSuit(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*rules.Pattern {
 	allGroups := append(plan.GetHandGroups(), plan.GetMeldedGroups()...)
-	suitCount, hasHonorTiles := oneSuitHonorHelper(allGroups)
+	var tilesToCheck domain.Tiles
+	for _, group := range allGroups {
+		if group.GetGroupType() == rules.TileGroupTypeThirteenOrphans {
+			return nil
+		}
+		if group.GetGroupType() == rules.TileGroupTypeSevenPairs {
+			tilesToCheck = append(tilesToCheck, getTilesToCheckForSevenPairs(group)...)
+		} else {
+			tilesToCheck = append(tilesToCheck, group.GetTiles()[0])
+		}
+	}
+	suitCount, hasHonorTiles := oneSuitHonorHelper(tilesToCheck)
 	switch suitCount {
 	case noSimpleSuits:
 		if hasHonorTiles {
@@ -140,7 +154,15 @@ func nineGates(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*rule
 		return nil
 	}
 	handGroups := plan.GetHandGroups()
-	suitCount, hasHonorTiles := oneSuitHonorHelper(handGroups)
+	var tilesToCheck domain.Tiles
+	for _, group := range handGroups {
+		if group.GetGroupType() == rules.TileGroupTypeThirteenOrphans ||
+			group.GetGroupType() == rules.TileGroupTypeSevenPairs {
+			return nil
+		}
+		tilesToCheck = append(tilesToCheck, group.GetTiles()[0])
+	}
+	suitCount, hasHonorTiles := oneSuitHonorHelper(tilesToCheck)
 	if hasHonorTiles || suitCount != oneSimpleSuit {
 		return nil
 	}
@@ -324,6 +346,7 @@ func concealedTripletsAndKongs(plan rules.OutPlan, context *rules.OutPlanScoring
 }
 
 // 5.0 Identical Sets
+
 // 5.1.1 Two Identical Sequences (一般高) : 10
 // 5.1.2 Two Identical Sequences Twice (兩般高) : 60
 // 5.1.3 Three Identical Sequences (一色三同順) : 120
@@ -362,6 +385,211 @@ func identicalSets(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*
 	return nil
 }
 
+// 6.0 Similar Sets
+
+// 6.1 Three Similar Sequences (三色同順) : 35
+func threeSimilarSequences(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*rules.Pattern {
+	allGroups := append(plan.GetHandGroups(), plan.GetMeldedGroups()...)
+	// Map from ordinal to set of suits seen for chow groups.
+	chowGroupCounts := make(map[int]map[*domain.Suit]struct{})
+	for _, group := range allGroups {
+		if group.GetGroupType() != rules.TileGroupTypeChow {
+			continue
+		}
+		// A chow group can be uniquely determined by the first tile of the sequence.
+		headTile := group.GetTiles()[0]
+		suitSet, found := chowGroupCounts[headTile.GetOrdinal()]
+		if !found {
+			suitSet = make(map[*domain.Suit]struct{})
+			chowGroupCounts[headTile.GetOrdinal()] = suitSet
+		}
+		suitSet[headTile.GetSuit()] = struct{}{}
+	}
+	for _, suitSet := range chowGroupCounts {
+		if len(suitSet) == 3 {
+			return []*rules.Pattern{rules.NewPattern("三色同順", 35)}
+		}
+	}
+	return nil
+}
+
+// 6.2.1 Small Three Similar Triplets (三色小同刻) : 30
+// 6.2.2 Three Similar Triplets (三色同刻) : 120
+func threeSimilarTriplets(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*rules.Pattern {
+	allGroups := append(plan.GetHandGroups(), plan.GetMeldedGroups()...)
+	// Map from ordinal to map of suits to either a value of 1 or 2. 1 indicates there is only pair
+	// of that suit, 2 indicates there is at least one "kan" of that suit.
+	similarTripletsPoints := make(map[int]map[*domain.Suit]int)
+	for _, group := range allGroups {
+		tile := group.GetTiles()[0]
+		if tile.GetSuit().GetSuitType() != domain.SuitTypeSimple {
+			continue
+		}
+		points := 0
+		if group.GetGroupType() == rules.TileGroupTypePair {
+			points = 1
+		} else if group.IsKanType() {
+			points = 2
+		} else {
+			continue
+		}
+		pointsMap, found := similarTripletsPoints[tile.GetOrdinal()]
+		if !found {
+			pointsMap = make(map[*domain.Suit]int)
+			similarTripletsPoints[tile.GetOrdinal()] = pointsMap
+		}
+		pointsMap[tile.GetSuit()] = util.MaxInt(pointsMap[tile.GetSuit()], points)
+	}
+	for _, pointsMap := range similarTripletsPoints {
+		totalPoints := 0
+		for _, points := range pointsMap {
+			totalPoints += points
+		}
+		if totalPoints >= 6 {
+			return []*rules.Pattern{rules.NewPattern("三色同刻", 120)}
+		} else if totalPoints >= 5 {
+			return []*rules.Pattern{rules.NewPattern("三色小同刻", 30)}
+		}
+	}
+	return nil
+}
+
+// 7.0 Consecutive Sets
+
+// 7.1 Nine-Tile Straight (一氣通貫) : 40
+// 7.2.1 Three Consecutive Triplets (三連刻) : 100
+// 7.2.2 Four Consecutive Triplets (四連刻) : 200
+func consecutiveSets(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*rules.Pattern {
+	allGroups := append(plan.GetHandGroups(), plan.GetMeldedGroups()...)
+	// Map from suit to ordinal array where each entry indicates presence of a chow/kan group.
+	hasChowGroupMap := make(map[*domain.Suit][]bool)
+	hasKanGroupMap := make(map[*domain.Suit][]bool)
+	for _, group := range allGroups {
+		headTile := group.GetTiles()[0]
+		headTileSuit := headTile.GetSuit()
+		if group.GetGroupType() != rules.TileGroupTypeChow {
+			suitChowGroup, found := hasChowGroupMap[headTileSuit]
+			if !found {
+				suitChowGroup = make([]bool, headTileSuit.GetSize())
+				hasChowGroupMap[headTileSuit] = suitChowGroup
+			}
+			suitChowGroup[headTile.GetOrdinal()] = true
+		} else if group.IsKanType() {
+			suitKanGroup, found := hasKanGroupMap[headTileSuit]
+			if !found {
+				suitKanGroup = make([]bool, headTileSuit.GetSize())
+				hasKanGroupMap[headTileSuit] = suitKanGroup
+			}
+			suitKanGroup[headTile.GetOrdinal()] = true
+		}
+	}
+
+	for _, suitChowGroup := range hasChowGroupMap {
+		// Presence of 1, 4, 7 heads in chow group -> indices 0, 3, 6
+		if suitChowGroup[0] && suitChowGroup[3] && suitChowGroup[6] {
+			return []*rules.Pattern{rules.NewPattern("一氣通貫", 40)}
+		}
+	}
+
+	// Once we encounter a 3-consecutive kan, we can stop the search since the hand doesn't allow
+	// another 4-consecutive kan to occur anyway.
+	for _, suitKanGroup := range hasKanGroupMap {
+		consecutiveKans := 0
+		for _, hasKan := range suitKanGroup {
+			if hasKan {
+				consecutiveKans++
+			} else {
+				if consecutiveKans == 3 {
+					return []*rules.Pattern{rules.NewPattern("三連刻", 100)}
+				} else if consecutiveKans == 4 {
+					return []*rules.Pattern{rules.NewPattern("四連刻", 200)}
+				}
+				consecutiveKans = 0
+			}
+		}
+	}
+	return nil
+}
+
+// 8.0 Terminals
+// 8.1.1 Mixed Lesser Terminals (混全帶么) : 40
+// 8.1.2 Pure Lesser Terminals (純全帶么) : 50
+// 8.1.3 Mixed Greater Terminals (混么九) : 100
+// 8.1.4 Pure Greater Terminals (清么九) : 400
+func terminals(plan rules.OutPlan, context *rules.OutPlanScoringContext) []*rules.Pattern {
+	allGroups := append(plan.GetHandGroups(), plan.GetMeldedGroups()...)
+	hasChowGroup := false
+	var tilesToCheck domain.Tiles
+	for _, group := range allGroups {
+		tiles := group.GetTiles()
+		headTile := tiles[0]
+		if group.IsKanType() || group.GetGroupType() == rules.TileGroupTypePair {
+			tilesToCheck = append(tilesToCheck, headTile)
+		} else if group.GetGroupType() == rules.TileGroupTypeChow {
+			hasChowGroup = true
+			if headTile.GetOrdinal() == 0 {
+				tilesToCheck = append(tilesToCheck, headTile)
+			} else {
+				tilesToCheck = append(tilesToCheck, tiles[len(tiles)-1])
+			}
+		} else if group.GetGroupType() == rules.TileGroupTypeSevenPairs {
+			tilesToCheck = append(tilesToCheck, getTilesToCheckForSevenPairs(group)...)
+		} else {
+			return nil
+		}
+	}
+
+	hasTerminal, hasNonTerminal, hasHonor := terminalTileHelper(tilesToCheck)
+	if hasNonTerminal || !hasTerminal {
+		return nil
+	}
+	if hasChowGroup {
+		if hasHonor {
+			return []*rules.Pattern{rules.NewPattern("混全帶么", 40)}
+		}
+		return []*rules.Pattern{rules.NewPattern("純全帶么", 50)}
+	}
+	if hasHonor {
+		return []*rules.Pattern{rules.NewPattern("混么九", 100)}
+	}
+	return []*rules.Pattern{rules.NewPattern("清么九", 400)}
+}
+
+// getTilesToCheckForSevenPairs returns for the given Seven Pairs tile group, list of tiles to
+// check using the helper functions provided below.
+func getTilesToCheckForSevenPairs(group *rules.TileGroup) domain.Tiles {
+	// We only need to check every other tile.
+	var tiles domain.Tiles
+	groupTiles := group.GetTiles()
+	for i := 0; i < len(groupTiles); i += 2 {
+		tiles = append(tiles, groupTiles[i])
+	}
+	return tiles
+}
+
+// terminalTileHelper returns three bools given a set of tiles:
+// The first bool indicates where there is at least one terminal tile.
+// The second bool indicates whether there is at least one non-terminal tile.
+// The third bool indicates whether there is at least one honor tile.
+func terminalTileHelper(tiles domain.Tiles) (bool, bool, bool) {
+	hasTerminal := false
+	hasNonTerminal := false
+	hasHonor := false
+	for _, tile := range tiles {
+		suitType := tile.GetSuit().GetSuitType()
+		if suitType == domain.SuitTypeHonor {
+			hasHonor = true
+		} else if suitType == domain.SuitTypeSimple {
+			if tile.IsTerminal() {
+				hasTerminal = true
+			} else {
+				hasNonTerminal = true
+			}
+		}
+	}
+	return hasTerminal, hasNonTerminal, hasHonor
+}
+
 type simpleSuitCount int
 
 const (
@@ -371,19 +599,17 @@ const (
 )
 
 // oneSuitHonorHelper returns:
-// a simple suit name, if there is exactly one simple suit amongst all groups. Empty otherwise.
-// a bool indicating whether there are honor tiles in any group AND there's at most one simple suit.
-func oneSuitHonorHelper(groups rules.TileGroups) (simpleSuitCount, bool) {
+// a simple suit name, if there is exactly one simple suit amongst all tiles. Empty otherwise.
+// a bool indicating whether there is at least one honor tile AND there's at most one simple suit.
+func oneSuitHonorHelper(tiles domain.Tiles) (simpleSuitCount, bool) {
 	hasHonorTiles := false
 	var suitName string
-	for _, group := range groups {
-		// Optimization: assume all tiles in the same group has the same suit.
-		firstTile := group.GetTiles()[0]
-		switch firstTile.GetSuit().GetSuitType() {
+	for _, tile := range tiles {
+		switch tile.GetSuit().GetSuitType() {
 		case domain.SuitTypeSimple:
 			if len(suitName) == 0 {
-				suitName = firstTile.GetSuit().GetName()
-			} else if suitName != firstTile.GetSuit().GetName() {
+				suitName = tile.GetSuit().GetName()
+			} else if suitName != tile.GetSuit().GetName() {
 				// Encountered more than one simple suit.
 				return moreThanOneSimpleSuits, false
 			}
